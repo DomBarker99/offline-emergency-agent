@@ -1,13 +1,19 @@
-// The agent itself: one question in, one grounded answer out.
-// ask() is the ONLY entry point used by every interface (terminal chat, HTTP server, desktop app).
-//
-// Flow for each question:
-//   1. safety router (rules)    -> danger words pin "immediate" cards
-//   2. knowledge search         -> top cards for the question
-//   3. prompt assembly          -> rules + profile (instructions) + cards + situation + question
-//   4. model call (Agents SDK)  -> local llama-server or OpenRouter, per config
-//   5. output guardrail (rules) -> flags missing/unknown citations, invented numbers, doses
-//   6. audit log                -> one JSONL line with everything above
+/**
+ * The agent: one question in, one grounded answer out.
+ *
+ * `ask()` is the single entry point. Every interface (terminal chat, HTTP API, a future
+ * desktop UI) calls this same function, so behavior is identical everywhere.
+ *
+ * REQUEST FLOW (each step lives in its own file):
+ *   1. Safety router     safety.ts     danger words pin "immediate" cards           (rules)
+ *   2. Knowledge search  knowledge.ts  find the most relevant cards                 (rules)
+ *   3. Prompt assembly   prompt.ts     rules + profile + cards + situation + question
+ *   4. Model call        models.ts     run the agent via the OpenAI Agents SDK      (AI)
+ *   5. Grounding check   safety.ts     output guardrail flags rule-breaking answers (rules)
+ *   6. Audit log         audit.ts      one JSON line describing all of the above
+ *
+ * Only step 4 involves a language model. Everything else is ordinary, testable code.
+ */
 import { randomUUID } from "node:crypto";
 import { Agent, assistant, user, type OutputGuardrail } from "@openai/agents";
 import { writeTurn, installLocalTracing } from "./audit.ts";
@@ -17,15 +23,26 @@ import { buildInstructions, buildUserMessage, PROMPT_VERSION } from "./prompt.ts
 import { checkAnswer, routeSafety } from "./safety.ts";
 import type { AskRequest, AskResponse, Profile } from "./types.ts";
 
-/** Data available to guardrails and tools during one run (the SDK's "run context"). */
+/**
+ * Data we hand to the SDK for one run (the SDK calls this the run "context").
+ * The SDK passes it through to guardrails and tools but never sends it to the model.
+ * Our grounding guardrail needs it to know which cards the model was shown.
+ */
 interface RunData {
-  providedIds: string[];
-  providedText: string;
+  providedIds: string[]; // IDs of cards included in the prompt
+  providedText: string; // the exact user message sent to the model
 }
 
+/** How many cards to include per question (pinned cards may push past this). */
 const MAX_CARDS = 4;
 
-// Flag-only guardrail: never blocks the answer, records what's wrong with it.
+/**
+ * Output guardrail (step 5). The SDK runs this on the model's final answer.
+ *
+ * Guardrails can "trip" to reject an answer. This one deliberately never trips
+ * (`tripwireTriggered: false`). It only reports flags, so the user always gets the
+ * answer plus a visible warning, rather than nothing at all during an emergency.
+ */
 const groundingGuardrail: OutputGuardrail = {
   name: "grounding-check",
   async execute({ agentOutput, context }) {
@@ -35,52 +52,88 @@ const groundingGuardrail: OutputGuardrail = {
   },
 };
 
+/** What ask() needs from its caller: where the cards are and whose household this is. */
 export interface AgentDeps {
   store: KnowledgeStore;
   profile: Profile;
 }
 
+/**
+ * Answers one question.
+ *
+ * @param req   the question, plus optional history/situation/provider/model
+ * @param deps  knowledge store and household profile
+ * @returns the answer, the cards used, danger matches, flags, model info and timings
+ * @throws on configuration errors (unknown model, missing API key) or network failures
+ */
 export async function ask(req: AskRequest, deps: AgentDeps): Promise<AskResponse> {
-  installLocalTracing();
+  installLocalTracing(); // keep SDK traces local (see audit.ts)
+
   const turnId = randomUUID();
-  const t0 = performance.now();
+  const t0 = performance.now(); // high-resolution timer for the timings in the response
+
+  // Pick the provider/model for this question; defaults come from config/models.json.
   const provider = req.provider ?? "local";
   const { runner, model } = createModelHandle(provider, req.model);
 
-  // 1-2. safety router + knowledge search
+  // ----- Step 1: safety router ---------------------------------------------------
+  // e.g. "water is rising" -> dangers ["flood"], pinnedIds ["C1"]
   const route = routeSafety(req.question, deps.store);
+
+  // ----- Step 2: knowledge search ------------------------------------------------
+  // Pinned cards come first, then the best keyword matches, up to MAX_CARDS.
   const hits = deps.store.search(req.question, { limit: MAX_CARDS, pinnedIds: route.pinnedIds });
-  const cards = hits.map((h) => h.card);
+  const cards = hits.map((hit) => hit.card);
   const tRetrieval = performance.now();
 
-  // 3. prompt
+  // ----- Step 3: prompt assembly -------------------------------------------------
+  // The Agent bundles instructions, model choice, settings and guardrails.
+  // It's cheap to create, so we build a fresh one per question.
   const agent = new Agent<RunData>({
     name: "Emergency assistant",
     instructions: buildInstructions(deps.profile),
-    model: model.modelId,
-    modelSettings: { temperature: 0.2, maxTokens: 600, providerData: model.extraRequest },
+    model: model.modelId, // provider's model ID, e.g. "gemma4-26b-a4b"
+    modelSettings: {
+      temperature: 0.2, // low = more consistent, less creative
+      maxTokens: 600, // upper bound on answer length
+      // Extra provider-specific request fields from config (e.g. OpenRouter's reasoning switch).
+      providerData: model.extraRequest,
+    },
     outputGuardrails: [groundingGuardrail],
   });
+
+  // The conversation so far, then the new question (with its cards) as the last message.
+  // `user()` and `assistant()` are SDK helpers that build correctly-shaped message objects.
   const userMessage = buildUserMessage(cards, req.situation, req.question);
   const input = [
-    ...(req.history ?? []).map((t) => (t.role === "user" ? user(t.text) : assistant(t.text))),
+    ...(req.history ?? []).map((turn) => (turn.role === "user" ? user(turn.text) : assistant(turn.text))),
     user(userMessage),
   ];
 
-  // 4-5. model call + guardrail
+  // ----- Step 4 + 5: model call, then the output guardrail -----------------------
   const result = await runner.run(agent, input, {
     context: { providedIds: cards.map((c) => c.id), providedText: userMessage },
   });
   const tModel = performance.now();
-  const answer = String(result.finalOutput ?? "").trim();
-  const flags = result.outputGuardrailResults.flatMap(
-    (g) => ((g.output.outputInfo as { flags?: string[] } | undefined)?.flags ?? []),
-  );
 
+  const answer = String(result.finalOutput ?? "").trim();
+
+  // Collect flags from every output guardrail that ran (currently just one).
+  const flags = result.outputGuardrailResults.flatMap((g) => {
+    const info = g.output.outputInfo as { flags?: string[] } | undefined;
+    return info?.flags ?? [];
+  });
+
+  // Shape the result for callers (and for the audit log).
   const response: AskResponse = {
     turnId,
     answer,
-    cards: hits.map((h) => ({ id: h.card.id, title: h.card.title, pinned: h.pinned, source: h.card.source })),
+    cards: hits.map((hit) => ({
+      id: hit.card.id,
+      title: hit.card.title,
+      pinned: hit.pinned,
+      source: hit.card.source,
+    })),
     dangers: route.dangers,
     flags,
     model: { provider, logical: model.logicalName, id: model.modelId },
@@ -91,7 +144,15 @@ export async function ask(req: AskRequest, deps: AgentDeps): Promise<AskResponse
     },
   };
 
-  // 6. audit
-  writeTurn({ ...response, promptVersion: PROMPT_VERSION, question: req.question, situation: req.situation, historyTurns: req.history?.length ?? 0 });
+  // ----- Step 6: audit log -------------------------------------------------------
+  // The response plus the inputs needed to understand it later.
+  writeTurn({
+    ...response,
+    promptVersion: PROMPT_VERSION,
+    question: req.question,
+    situation: req.situation,
+    historyTurns: req.history?.length ?? 0,
+  });
+
   return response;
 }

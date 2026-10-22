@@ -1,36 +1,79 @@
-// Knowledge memory: where cards come from and how they are found.
-// Everything else talks to the KnowledgeStore INTERFACE, so the storage can change
-// (today: demo JSON + simple keyword scoring; next: a SQLite pack with full-text search)
-// without touching the agent, the server or the UI.
+/**
+ * Knowledge store: where cards live and how the relevant ones are found.
+ *
+ * DESIGN
+ * The rest of the app depends only on the `KnowledgeStore` interface below, never on a
+ * concrete storage technology. Today the implementation is `DemoKeywordStore` (cards from a
+ * JSON file, ranked by shared words). Later it will be a SQLite-backed knowledge pack. Because
+ * both implement the same interface, swapping them doesn't touch the agent, server or UI.
+ *
+ * Step 2 of the request flow (see agent.ts).
+ */
 import { readFileSync } from "node:fs";
 import type { Card } from "./types.ts";
 
+/** Options for a search. */
 export interface SearchOptions {
+  /** Maximum number of cards to return (pinned cards always fit, even past the limit). */
   limit: number;
-  pinnedIds?: string[]; // always included first (from the safety router)
+  /**
+   * Card IDs that must be included first, regardless of how well they match the words.
+   * Supplied by the safety router (safety.ts) for life-safety cards.
+   */
+  pinnedIds?: string[];
 }
 
+/** One search result. */
 export interface SearchHit {
   card: Card;
+  /** true = included because the safety router demanded it, not because of word matching. */
   pinned: boolean;
+  /** Relevance score (higher is better). Pinned cards use Infinity so they sort first. */
   score: number;
 }
 
+/** What any knowledge backend must provide. */
 export interface KnowledgeStore {
+  /** Most relevant cards for a question, pinned cards first. */
   search(query: string, opts: SearchOptions): SearchHit[];
+  /** One card by ID, or undefined if it doesn't exist. */
   get(id: string): Card | undefined;
+  /** Every card (the safety router uses this to find "immediate" cards for a scenario). */
   all(): Card[];
 }
 
+// ---------------------------------------------------------------------------
+// Temporary keyword-based implementation
+// ---------------------------------------------------------------------------
+
+/**
+ * Common words that carry no meaning for matching ("the", "can", ...).
+ * Without this list, nearly every card would match nearly every question.
+ */
 const STOPWORDS = new Set(
-  "a an and are can do does for from how i if in is it my of on or our should the to we what when where which who will with you your".split(" "),
+  (
+    "a an and are can do does for from how i if in is it my of on or our should " +
+    "the to we what when where which who will with you your"
+  ).split(" "),
 );
 
+/**
+ * Splits text into lowercase words for matching.
+ * "Can I run the generator?" -> ["run", "generator"]
+ * (words of 2 letters or fewer, and stopwords, are dropped)
+ */
 function tokens(text: string): string[] {
-  return text.toLowerCase().match(/[a-z0-9]+/g)?.filter((t) => t.length > 2 && !STOPWORDS.has(t)) ?? [];
+  const words = text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  return words.filter((t) => t.length > 2 && !STOPWORDS.has(t));
 }
 
-/** TEMPORARY store: cards from a JSON file, ranked by how many question words they contain. */
+/**
+ * TEMPORARY store: cards loaded from a JSON file, ranked by how many question words
+ * appear in each card's title, scenarios and body.
+ *
+ * Limitation: purely literal. "dog" will not match a card about a "pet carrier".
+ * The planned SQLite pack (full-text and/or vector search) addresses this.
+ */
 export class DemoKeywordStore implements KnowledgeStore {
   private readonly cards: Card[];
 
@@ -43,26 +86,47 @@ export class DemoKeywordStore implements KnowledgeStore {
   }
 
   all(): Card[] {
+    // Return a copy so callers can't accidentally reorder or modify the store's own list.
     return [...this.cards];
   }
 
   search(query: string, opts: SearchOptions): SearchHit[] {
-    const q = new Set(tokens(query));
-    const pinned = (opts.pinnedIds ?? []).map((id) => this.get(id)).filter((c): c is Card => !!c);
+    // Words from the question, as a Set for fast "is this word in the question?" checks.
+    const questionWords = new Set(tokens(query));
+
+    // 1. Pinned cards: look them up by ID and drop any IDs that don't exist.
+    //    `(c): c is Card => !!c` tells TypeScript the filtered list has no undefined values.
+    const pinned = (opts.pinnedIds ?? [])
+      .map((id) => this.get(id))
+      .filter((c): c is Card => !!c);
+
+    // 2. Every other card: score = number of its words that also appear in the question.
     const scored = this.cards
-      .filter((c) => !pinned.includes(c))
+      .filter((card) => !pinned.includes(card)) // don't list a pinned card twice
       .map((card) => {
-        const words = tokens(`${card.title} ${card.scenarios.join(" ")} ${card.body}`);
-        const score = words.filter((w) => q.has(w)).length;
+        const cardWords = tokens(`${card.title} ${card.scenarios.join(" ")} ${card.body}`);
+        const score = cardWords.filter((w) => questionWords.has(w)).length;
         return { card, pinned: false, score };
       })
-      .filter((h) => h.score > 0)
+      .filter((hit) => hit.score > 0) // no shared words = not relevant
+      // Highest score first. Ties are broken by card ID so results are always in the same order.
       .sort((a, b) => b.score - a.score || a.card.id.localeCompare(b.card.id));
-    const hits = [...pinned.map((card) => ({ card, pinned: true, score: Infinity })), ...scored];
+
+    // 3. Pinned first, then the best matches, cut to the limit.
+    //    If there are more pinned cards than the limit, keep them all (safety wins).
+    const hits: SearchHit[] = [
+      ...pinned.map((card) => ({ card, pinned: true, score: Infinity })),
+      ...scored,
+    ];
     return hits.slice(0, Math.max(opts.limit, pinned.length));
   }
 }
 
+/**
+ * Loads the demo cards shipped in data/demo/cards.json.
+ * The default path is resolved relative to this file (see `import.meta.url` in config.ts).
+ */
 export function loadDemoStore(path = new URL("../../data/demo/cards.json", import.meta.url)): DemoKeywordStore {
-  return new DemoKeywordStore(JSON.parse(readFileSync(path, "utf8")) as Card[]);
+  const cards = JSON.parse(readFileSync(path, "utf8")) as Card[];
+  return new DemoKeywordStore(cards);
 }
