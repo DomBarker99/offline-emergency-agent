@@ -77,7 +77,7 @@ config/models.json        logical model names → provider model IDs (local + Op
 data/demo/                DEMO cards and profile (placeholders, not vetted guidance)
 docs/                     this walkthrough
 scripts/agent-check.sh    agent-side install + typecheck (outside the synced folder)
-scripts/setup-github.sh   one-time GitHub setup (unused; GitHub is set up from the agent)
+scripts/setup-github.sh   one-time GitHub setup from the Mac (not used: GitHub was set up from the agent's gh login)
 src/core/                 the agent (see table above)
 src/cli/chat.ts           terminal chat  →  npm run chat
 src/server/http.ts        local HTTP API →  npm run serve

@@ -8,10 +8,10 @@ A local, offline emergency response agent: an on-device model that answers from 
 
 ```
  Agent edits here: /shared/sparthill-2026/offline-emergency-agent   (synced to your Mac via Nextcloud, read-only view)
-        │ git push
+        │ git push (agent's gh login, https)
         ▼
  GitHub: DomBarker99/offline-emergency-agent (private)   ← the history; review every change here
-        │ git pull
+        │ git pull (repo-only deploy key ~/.ssh/id_ed25519_oea, set in the clone's core.sshCommand)
         ▼
  Mac runs it: ~/Developer/offline-emergency-agent   (dependencies installed here; talks to OpenRouter + local models)
 ```
