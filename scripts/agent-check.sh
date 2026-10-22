@@ -8,7 +8,8 @@ MIRROR="${MIRROR:-$HOME/build/offline-emergency-agent}"
 mkdir -p "$MIRROR"
 rsync -a --delete --exclude node_modules --exclude .git "$SRC/" "$MIRROR/"
 cd "$MIRROR"
-if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+# npm install (not ci): updates the lockfile when package.json changed; the Mac uses `npm ci` for exact installs
+npm install --no-audit --no-fund
 # copy a newly created/updated lockfile back so it gets committed
 cp package-lock.json "$SRC/package-lock.json"
 for s in "${@:-typecheck}"; do npm run --silent "$s"; done

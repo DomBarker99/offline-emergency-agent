@@ -30,7 +30,7 @@ export interface ResolvedModel {
   extraRequest: Record<string, unknown>;
 }
 
-const CONFIG_URL = new URL("../config/models.json", import.meta.url);
+const CONFIG_URL = new URL("../../config/models.json", import.meta.url);
 
 export function loadModels(): ModelsFile {
   return JSON.parse(readFileSync(CONFIG_URL, "utf8")) as ModelsFile;

@@ -1,7 +1,7 @@
 // Smoke test: send the same grounded emergency question to each provider and print the result.
 // Usage: npm run smoke [-- <provider> [logicalModel]]   e.g. npm run smoke:local, npm run smoke:openrouter
-import { resolveModel, type ProviderName } from "./config.ts";
-import { chat, type ChatMessage } from "./llm.ts";
+import { resolveModel, type ProviderName } from "../core/config.ts";
+import { chat, type ChatMessage } from "./raw-client.ts";
 
 const SYSTEM =
   "You are an offline emergency assistant. Answer ONLY from the provided cards and cite card IDs like [C1]. " +

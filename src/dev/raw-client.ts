@@ -1,7 +1,7 @@
 // Minimal OpenAI-compatible chat client using plain fetch.
 // TEMPORARY: proves both providers work before an agent SDK is chosen. Both OpenRouter and
 // llama-server speak the same /v1/chat/completions API, so one client covers local and cloud.
-import type { ResolvedModel } from "./config.ts";
+import type { ResolvedModel } from "../core/config.ts";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

@@ -8,13 +8,19 @@
     "node": ">=24"
   },
   "scripts": {
+    "chat": "node --env-file-if-exists=$HOME/.config/sparthill/env src/cli/chat.ts",
+    "serve": "node --env-file-if-exists=$HOME/.config/sparthill/env src/server/http.ts",
     "typecheck": "tsc --noEmit",
-    "smoke": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts",
-    "smoke:local": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts local",
-    "smoke:openrouter": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts openrouter"
+    "smoke": "node --env-file-if-exists=$HOME/.config/sparthill/env src/dev/smoke.ts",
+    "smoke:local": "node --env-file-if-exists=$HOME/.config/sparthill/env src/dev/smoke.ts local",
+    "smoke:openrouter": "node --env-file-if-exists=$HOME/.config/sparthill/env src/dev/smoke.ts openrouter"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@openai/agents": "0.21.0",
+    "zod": "4.6.7"
   }
 }

@@ -2,7 +2,7 @@
 
 A local, offline emergency response agent: an on-device model that answers from a localized, source-backed knowledge pack when power and communications are down. Built for SpartHill Hacks 2026. Planning docs live one folder up, in the `sparthill-2026` workspace.
 
-**Status:** scaffold. It talks to OpenRouter or the local llama.cpp server through one config file. No agent SDK yet, and no knowledge pack yet.
+**Status:** working scaffold. OpenAI Agents SDK agent with a deterministic safety router, keyword search over 6 DEMO cards, grounding checks and local audit logs. Terminal chat plus local HTTP API. Runs on the local llama.cpp models or OpenRouter via one config file. **Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).**
 
 ## How development works
 
@@ -26,8 +26,9 @@ cd ~/Developer/offline-emergency-agent
 git pull
 npm ci                     # install exact locked dependencies
 npm run typecheck
-npm run smoke:local        # needs the local server: bash <workspace>/playground/start.sh
-npm run smoke:openrouter   # needs OPENROUTER_API_KEY in ~/.config/sparthill/env
+npm run chat               # needs the local server: bash <workspace>/playground/start.sh
+npm run chat -- --provider openrouter   # needs OPENROUTER_API_KEY in ~/.config/sparthill/env
+npm run serve              # HTTP API on 127.0.0.1:8787
 ```
 
 ## Configuration
