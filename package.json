@@ -1,0 +1,20 @@
+{
+  "name": "offline-emergency-agent",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Local, offline emergency response agent with a localized knowledge pack (SpartHill Hacks 2026).",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "smoke": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts",
+    "smoke:local": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts local",
+    "smoke:openrouter": "node --env-file-if-exists=$HOME/.config/sparthill/env src/smoke.ts openrouter"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$comment": "Logical model names used by the app, mapped to each provider's model ID. The app only ever refers to the logical name. Local IDs must match section names in the workspace playground/models.ini (per-model quirks for local live there). 'request' holds extra request fields a provider needs for that model.",
+  "providers": {
+    "local": {
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "apiKeyEnv": null
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKeyEnv": "OPENROUTER_API_KEY"
+    }
+  },
+  "defaultModel": "gemma-26b",
+  "models": {
+    "gemma-26b": {
+      "local": { "id": "gemma4-26b-a4b" },
+      "openrouter": { "id": "google/gemma-4-26b-a4b-it", "request": { "reasoning": { "enabled": false } } }
+    },
+    "gpt-oss-20b": {
+      "local": { "id": "gpt-oss-20b" },
+      "openrouter": { "id": "openai/gpt-oss-20b", "request": { "reasoning": { "effort": "low" } } }
+    },
+    "granite-8b": {
+      "local": { "id": "granite4.2-8b" },
+      "openrouter": { "id": "ibm-granite/granite-4.2-8b" }
+    }
+  }
+}
