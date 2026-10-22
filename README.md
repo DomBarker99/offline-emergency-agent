@@ -1,46 +1,53 @@
 # offline-emergency-agent
 
-A local, offline emergency response agent: an on-device model that answers from a localized, source-backed knowledge pack when power and communications are down. Built for SpartHill Hacks 2026. Planning docs live one folder up, in the `sparthill-2026` workspace.
+An offline emergency response assistant. A small on-device language model answers from a localized, source-backed knowledge pack, so people get specific guidance when power and communications are down.
 
-**Status:** working scaffold. OpenAI Agents SDK agent with a deterministic safety router, keyword search over 6 DEMO cards, grounding checks and local audit logs. Terminal chat plus local HTTP API. Runs on the local llama.cpp models or OpenRouter via one config file. **Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).**
+Built for SpartHill Hacks 2026 (AI for Sustainable Impact).
 
-## How development works
+> **Status: early prototype.** The cards in `data/demo/` are placeholders, not vetted emergency guidance. This is not an emergency service.
 
-```
- Agent edits here: /shared/sparthill-2026/offline-emergency-agent   (synced to your Mac via Nextcloud, read-only view)
-        │ git push (agent's gh login, https)
-        ▼
- GitHub: DomBarker99/offline-emergency-agent (private)   ← the history; review every change here
-        │ git pull (repo-only deploy key ~/.ssh/id_ed25519_oea, set in the clone's core.sshCommand)
-        ▼
- Mac runs it: ~/Developer/offline-emergency-agent   (dependencies installed here; talks to OpenRouter + local models)
-```
+## How it works
 
-- **Don't run git in the Nextcloud copy on the Mac.** Two git clients writing the same `.git` through file sync can corrupt it. Use the Mac clone for anything you run or change.
-- **Dependencies are never in the synced folder.** On the agent they're installed in a mirror (`scripts/agent-check.sh`).
+Every question goes through six steps:
 
-## Run it on the Mac
+1. **Safety router (plain rules).** Danger words such as rising water, gas or fire pin the matching "immediate action" cards.
+2. **Knowledge search.** Picks the most relevant cards.
+3. **Prompt assembly.** Combines rules, household profile, cards and question.
+4. **Model call** via the [OpenAI Agents SDK](https://github.com/openai/openai-agents-js), to any OpenAI-compatible endpoint (a local model server, or OpenRouter).
+5. **Grounding check.** Flags answers that cite no card, or that contain numbers or doses not found in the cards.
+6. **Local audit log.** One JSON line per question in `logs/`. Tracing is local only.
+
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Quick start
+
+Requirements: Node.js 24+ (runs TypeScript directly) and an OpenAI-compatible model endpoint.
 
 ```sh
-cd ~/Developer/offline-emergency-agent
-git pull
-npm ci                     # install exact locked dependencies
+npm ci
+cp .env.example .env        # add OPENROUTER_API_KEY to use OpenRouter
+npm run chat                # terminal chat, local provider by default
+npm run chat -- --provider openrouter --model gemma-26b
+npm run serve               # HTTP API on 127.0.0.1:8787 (POST /api/ask)
 npm run typecheck
-npm run chat               # needs the local server: bash <workspace>/playground/start.sh
-npm run chat -- --provider openrouter   # needs OPENROUTER_API_KEY in ~/.config/sparthill/env
-npm run serve              # HTTP API on 127.0.0.1:8787
+```
+
+### Local models
+
+The `local` provider expects an OpenAI-compatible server at `http://127.0.0.1:8080/v1`. Override it with `LOCAL_BASE_URL`. [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` in router mode works well. `config/llama-server.example.ini` is a preset for the models below:
+
+```sh
+llama-server --models-preset config/llama-server.example.ini --models-max 1
 ```
 
 ## Configuration
 
-| What | Where | In git? |
-| --- | --- | --- |
-| Logical model names mapped to provider model IDs | `config/models.json` | yes |
-| Local per-model settings (thinking switch, context) | workspace `playground/models.ini` | workspace |
-| Secrets (OpenRouter key) | `~/.config/sparthill/env` on the machine that runs the app (`chmod 600`) | **never** |
+| File | Purpose |
+| --- | --- |
+| `config/models.json` | Logical model names (`gemma-26b`, `gpt-oss-20b`, `granite-8b`) mapped to each provider's model ID. The code only uses logical names. |
+| `config/llama-server.example.ini` | Example llama-server preset with per-model settings (e.g. turning reasoning off) |
+| `.env` (from `.env.example`, git-ignored) | API keys and endpoint overrides |
 
-The app only uses logical names (`gemma-26b`, `gpt-oss-20b`, `granite-8b`). Switching between cloud and local, or between models, is a config change, not a code change.
+## License
 
-## Requirements
-
-Node 24 or newer, which runs TypeScript directly (no build step). npm.
+TBD.

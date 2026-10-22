@@ -19,7 +19,7 @@ export interface ChatResult {
 
 export async function chat(model: ResolvedModel, messages: ChatMessage[], maxTokens = 400): Promise<ChatResult> {
   if (model.provider !== "local" && !model.apiKey) {
-    throw new Error(`No API key for ${model.provider}. Put it in ~/.config/sparthill/env (see .env.example).`);
+    throw new Error(`No API key for ${model.provider}. Set it in .env (see .env.example).`);
   }
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (model.apiKey) headers.Authorization = `Bearer ${model.apiKey}`;

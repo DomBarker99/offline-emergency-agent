@@ -1,5 +1,5 @@
 {
-  "$comment": "Logical model names used by the app, mapped to each provider's model ID. The app only ever refers to the logical name. Local IDs must match section names in the workspace playground/models.ini (per-model quirks for local live there). 'request' holds extra request fields a provider needs for that model.",
+  "$comment": "Logical model names used by the app, mapped to each provider's model ID. The app only ever refers to the logical name. Local IDs must match the model names served by the local server (see config/llama-server.example.ini, where per-model settings live). 'request' holds extra request fields a provider needs for that model.",
   "providers": {
     "local": {
       "baseUrl": "http://127.0.0.1:8080/v1",

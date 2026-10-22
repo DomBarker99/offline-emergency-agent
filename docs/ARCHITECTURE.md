@@ -1,98 +1,71 @@
-# Architecture walkthrough
+# Architecture
 
-How the pieces fit, in plain language. Update this file whenever the structure changes.
-
-## The big picture
+## Overview
 
 ```
-   ┌──────────── interfaces (swappable) ────────────┐
-   │ terminal chat    browser page    desktop window │
-   │ src/cli/         (later)         (later)        │
-   └───────┬──────────────┬──────────────┬───────────┘
-           │ direct call  │ HTTP         │ HTTP
-           │              ▼              ▼
-           │      src/server/http.ts  (127.0.0.1:8787, POST /api/ask)
-           ▼              │
-   ┌──────────────────────┴────────────────────────────┐
-   │ src/core/   the agent's "brain" (no UI, no HTTP)   │
-   │   agent.ts  ask(): the one entry point             │
-   │   safety.ts → knowledge.ts → prompt.ts → models.ts │
-   │   audit.ts  (local logs)                           │
-   └──────────────────────┬────────────────────────────┘
-                          │ OpenAI-style API
+   ┌──────────── interfaces ─────────────┐
+   │ terminal chat        HTTP API        │
+   │ src/cli/chat.ts      src/server/     │
+   └───────┬──────────────────┬───────────┘
+           │ direct call      │ POST /api/ask
+           ▼                  ▼
+   ┌──────────────────────────────────────────────────┐
+   │ src/core/   agent logic (no UI, no HTTP)          │
+   │   agent.ts  ask(): the single entry point         │
+   │   safety.ts → knowledge.ts → prompt.ts → models.ts│
+   │   audit.ts  local logs                            │
+   └──────────────────────┬───────────────────────────┘
+                          │ OpenAI-compatible Chat Completions
            ┌──────────────┴──────────────┐
            ▼                             ▼
-   llama-server on the Mac         OpenRouter (cloud, development only)
-   (playground/models.ini)         (key in ~/.config/sparthill/env)
+   local model server              OpenRouter
+   (e.g. llama.cpp llama-server)   (cloud)
 ```
 
-**The core idea:** all the intelligence lives in `src/core/` and is reached through one function, `ask()`. Interfaces are thin. They collect a question, call `ask()` (directly or over HTTP), and display the answer. That's why the frontend decision can wait: the core doesn't care what's on top of it.
+All agent logic lives in `src/core/` behind one function, `ask()`. Interfaces only collect input, call `ask()` (directly or over HTTP) and render the result. A browser or desktop UI would use the same HTTP API.
 
-## What happens when you ask a question
+## Request flow
 
 `ask()` in `src/core/agent.ts`:
 
-| Step | File | What it does | AI involved? |
+| Step | File | What it does | AI? |
 | --- | --- | --- | --- |
-| 1. Safety router | `safety.ts` | Looks for danger words (rising water, gas, fire, generator indoors). If found, **pins** that scenario's "immediate" cards so they're always shown to the model. | No (plain rules) |
-| 2. Knowledge search | `knowledge.ts` | Finds the cards that best match the question, up to 4. | No |
-| 3. Prompt assembly | `prompt.ts` | Builds the instructions (rules + household profile) and the message (cards + situation + question). | No |
-| 4. Model call | `models.ts` + Agents SDK | Sends it to the model chosen in config: local or OpenRouter. | **Yes** (the only step) |
-| 5. Grounding check | `safety.ts` via an SDK output guardrail | Flags answers with no citation, citations to cards that weren't given, phone numbers or doses not in the cards. Flags are recorded, not hidden. | No |
-| 6. Audit | `audit.ts` | Writes one line per question to `logs/turns-*.jsonl` and the SDK's trace to `logs/trace-*.jsonl`. **Nothing is sent to OpenAI's tracing service.** | No |
+| 1. Safety router | `safety.ts` | Detects danger words (rising water, gas, fire, fuel-burning appliances indoors) and pins that scenario's `immediate` cards | No |
+| 2. Knowledge search | `knowledge.ts` | Returns the best-matching cards (up to 4) | No |
+| 3. Prompt assembly | `prompt.ts` | Instructions (rules + household profile) and message (cards + situation + question) | No |
+| 4. Model call | `models.ts`, Agents SDK | Runs the agent on the provider and model chosen in `config/models.json` | Yes |
+| 5. Grounding check | `safety.ts` (output guardrail) | Flags missing or unknown citations, phone numbers and doses not present in the cards. Flags are returned, never hidden. | No |
+| 6. Audit | `audit.ts` | Appends to `logs/turns-*.jsonl`. SDK trace spans go to `logs/trace-*.jsonl`. The default remote trace exporter is replaced. | No |
 
-Only step 4 uses AI. Everything else is ordinary code you can read, test and change.
+## Memory
 
-## The three kinds of memory, and where each lives
-
-| Memory | What | Where now | Where next |
+| Kind | Contents | Current implementation | Planned |
 | --- | --- | --- | --- |
-| **Knowledge** | The emergency cards | `data/demo/cards.json`, searched by simple keyword matching (`DemoKeywordStore`) | A SQLite "pack" file with full-text search (and maybe vector search). It plugs in behind the same `KnowledgeStore` interface. |
-| **Profile** | Household facts, meds, meeting points | `data/demo/profile.json`, put into every prompt | Edited in the app, stored locally |
-| **Situation + conversation** | What's happening now, plus prior turns | Kept by the interface and sent with each request (`history`, `situation`) | Same, plus a visible, editable "situation" panel |
+| Knowledge | Emergency cards | `data/demo/cards.json` with keyword ranking (`DemoKeywordStore`) | SQLite knowledge pack (full-text search, optionally vector search) behind the same `KnowledgeStore` interface |
+| Profile | Household facts, medications, meeting points | `data/demo/profile.json`, included in every prompt | Editable in the app, stored locally |
+| Situation and conversation | Current situation notes, prior turns | Sent by the interface with each request | Situation panel in the UI |
 
-**About databases, briefly:**
-- **SQLite** is a database stored in one file. No server needed, works offline, easy to copy to a laptop. The knowledge pack will be one of these.
-- **Full-text search** (SQLite's FTS5) finds cards by words, like a search engine.
-- **Vector search** finds cards by *meaning*: "dog" matches "pet carrier." It works by turning text into lists of numbers ("embeddings") with a small model, then finding the closest ones.
+Known limitation: keyword search has no notion of meaning or conversation context. A follow-up such as "what about the dog?" won't match a card about pet carriers. Semantic (vector) search or query rewriting addresses this.
 
-The `What about the dog?` test currently fails for exactly this reason: no keyword overlap. Vector search, or smarter query handling, is how we'd fix it.
+## Interfaces
 
-## How a desktop app would connect
+- **Terminal chat** (`npm run chat`) calls `ask()` in-process. Commands: `/cards`, `/situation <text>`, `/model <name>`, `/provider <local|openrouter>`, `/clear`, `/quit`.
+- **HTTP API** (`npm run serve`) binds to `127.0.0.1:8787`:
+  - `GET /api/health`
+  - `GET /api/models`
+  - `POST /api/ask` with `{ question, history?, situation?, provider?, model? }`
+- **Graphical UI:** not built yet. Any web UI (in a browser, or wrapped in a desktop shell) would call the HTTP API.
 
-Options, all compatible with this structure:
-
-| Option | How it talks to the agent | Notes |
-| --- | --- | --- |
-| **Browser page** | Served by `src/server/http.ts`, calls `/api/ask` | Simplest. Opens in Safari/Chrome at `127.0.0.1`. |
-| **Electron** | Its Node "main process" can start the server (or import `src/core` directly) and show the page in a window | All TypeScript, familiar tooling. Bundles its own Chromium: roughly 150 to 300 MB extra memory. |
-| **Tauri** | Rust shell starts the server as a "sidecar" and shows the page in the system WebView | Much lighter on memory (uses macOS's built-in WebKit). Needs the Rust toolchain. |
-
-Whatever we pick, the UI is the same web page, and the shell is a small wrapper added at the end. Memory matters on a 24 GB Mac running a 15 GB model, which counts in Tauri's favor or a plain browser tab's. We can decide once the UI exists.
-
-## Folder map
+## Layout
 
 ```
-config/models.json        logical model names → provider model IDs (local + OpenRouter)
-data/demo/                DEMO cards and profile (placeholders, not vetted guidance)
-docs/                     this walkthrough
-scripts/agent-check.sh    agent-side install + typecheck (outside the synced folder)
-scripts/setup-github.sh   one-time GitHub setup from the Mac (not used: GitHub was set up from the agent's gh login)
-src/core/                 the agent (see table above)
-src/cli/chat.ts           terminal chat  →  npm run chat
-src/server/http.ts        local HTTP API →  npm run serve
-src/dev/                  low-level provider smoke test (no SDK) → npm run smoke
-logs/                     audit logs (git-ignored)
+config/models.json               logical model names → provider model IDs
+config/llama-server.example.ini  example local model server preset
+data/demo/                       placeholder cards and profile
+docs/                            documentation
+src/core/                        agent logic
+src/cli/chat.ts                  terminal chat
+src/server/http.ts               local HTTP API
+src/dev/                         provider smoke test without the SDK (npm run smoke)
+logs/                            audit logs (git-ignored)
 ```
-
-## Commands
-
-```sh
-npm run chat                               # chat with the local default model (start the playground first)
-npm run chat -- --model granite-8b         # pick a model by logical name
-npm run chat -- --provider openrouter      # same agent, cloud model (needs the key)
-npm run serve                              # HTTP API on 127.0.0.1:8787
-npm run typecheck                          # TypeScript check
-```
-
-In chat: `/cards` shows which cards were used, `/situation <text>` adds a situation note, `/model`, `/provider`, `/clear`, `/quit`.

@@ -1,9 +1,10 @@
 node_modules/
 dist/
+logs/
 *.log
 .DS_Store
-# secrets never live in the repo; use ~/.config/sparthill/env
+.idea/
+.vscode/
 .env
 .env.*
 !.env.example
-logs/

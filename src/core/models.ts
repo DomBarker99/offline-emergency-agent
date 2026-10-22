@@ -12,7 +12,7 @@ export interface ModelHandle {
 export function createModelHandle(provider: ProviderName, logicalName?: string): ModelHandle {
   const model = resolveModel(provider, logicalName);
   if (provider !== "local" && !model.apiKey) {
-    throw new Error(`No API key for ${provider}. Put it in ~/.config/sparthill/env (see .env.example).`);
+    throw new Error(`No API key for ${provider}. Set it in .env (see .env.example).`);
   }
   const modelProvider = new OpenAIProvider({
     baseURL: model.baseUrl,
