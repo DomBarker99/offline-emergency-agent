@@ -1,0 +1,62 @@
+{
+  "$comment": [
+    "The topic grid: hazards x needs x phases. extract.py tags every passage with the topics it matches.",
+    "Matching is plain keyword matching (lowercase, word boundaries) against the passage's URL, page title, section heading and text.",
+    "A match in the URL, title or heading counts as strong; a match only in the body text needs 'minBodyHits' hits.",
+    "These tags drive the coverage report (which cells of the grid have sources) and let search filter by topic."
+  ],
+  "minBodyHits": 2,
+  "hazards": {
+    "earthquake": ["earthquake", "earthquakes", "aftershock", "drop, cover", "shaking", "seismic", "shakeout", "myshake"],
+    "flood": ["flood", "floods", "flooding", "floodwater", "flash flood", "high water", "storm surge"],
+    "wildfire": ["wildfire", "wildfires", "brush fire", "red flag", "defensible space", "ember"],
+    "wildfire-smoke": ["smoke", "air quality", "aqi", "n95", "particulate", "pm2.5", "air purifier", "hepa"],
+    "extreme-heat": ["heat", "extreme heat", "heat stroke", "heat exhaustion", "heat wave", "cooling center", "hot weather"],
+    "power-outage": ["power outage", "power outages", "blackout", "power shutoff", "psps", "loss of power", "without power", "outage"],
+    "winter-weather": ["winter", "snow", "blizzard", "ice storm", "frostbite", "hypothermia", "extreme cold"],
+    "hurricane": ["hurricane", "hurricanes", "tropical storm"],
+    "tornado": ["tornado", "tornadoes"],
+    "thunderstorm-lightning": ["thunderstorm", "lightning", "hail", "severe storm", "severe storms", "severe weather"],
+    "tsunami": ["tsunami", "tsunamis"],
+    "landslide": ["landslide", "landslides", "debris flow", "mudslide", "mudslides"],
+    "volcano": ["volcano", "volcanoes", "volcanic", "ashfall"],
+    "drought": ["drought"],
+    "pandemic-disease": ["pandemic", "infectious disease", "outbreak"],
+    "hazmat-chemical": ["hazardous materials", "hazmat", "chemical", "chemicals", "household chemical"],
+    "radiation-nuclear": ["radiation", "radiological", "nuclear", "radioactive"],
+    "home-fire": ["home fire", "home fires", "smoke alarm", "smoke alarms", "fire escape", "house fire"],
+    "explosion-attack": ["explosion", "explosions", "terrorism", "terrorist", "active shooter", "bomb", "mass gathering", "biohazard", "bioterrorism"],
+    "cyber": ["cybersecurity", "cyber attack", "phishing", "scam", "fraud"],
+    "space-weather": ["space weather", "solar storm", "geomagnetic"],
+    "avalanche": ["avalanche"]
+  },
+  "needs": {
+    "evacuation": ["evacuate", "evacuation", "evacuation order", "evacuation route", "leave immediately", "go bag", "go-bag"],
+    "shelter-in-place": ["shelter in place", "shelter-in-place", "stay inside", "safe room", "stay indoors"],
+    "shelters": ["emergency shelter", "public shelter", "shelters", "cooling center", "cooling centers", "warming center"],
+    "water": ["drinking water", "water supply", "store water", "boil water", "disinfect water", "safe water", "bottled water", "gallon of water"],
+    "food-safety": ["food safety", "refrigerator", "freezer", "perishable", "spoiled", "throw it out", "when in doubt", "food thermometer", "40 °f", "40°f"],
+    "first-aid": ["first aid", "cpr", "bleeding", "burns", "injury", "injuries", "wound"],
+    "medications": ["medication", "medications", "medicine", "medicines", "prescription", "prescriptions", "insulin", "pharmacist", "drug"],
+    "medical-devices": ["medical device", "medical devices", "oxygen", "dialysis", "wheelchair", "power-dependent", "electricity-dependent", "durable medical equipment", "cpap"],
+    "disabilities-access": ["disability", "disabilities", "access and functional needs", "hearing", "deaf", "blind", "mobility", "service animal"],
+    "older-adults": ["older adult", "older adults", "seniors", "elderly", "aging", "caregiver", "caregivers"],
+    "children": ["children", "child", "kids", "infant", "infants", "baby", "babies", "school"],
+    "pets": ["pet", "pets", "dog", "dogs", "cat", "cats", "animal", "animals", "livestock", "service animal"],
+    "alerts-communication": ["alert", "alerts", "warning", "warnings", "wireless emergency alert", "noaa weather radio", "text message", "communication plan", "out-of-town contact", "out-of-area contact", "emergency contact"],
+    "documents-money": ["insurance", "documents", "financial", "cash", "bank", "identification", "records"],
+    "carbon-monoxide": ["carbon monoxide", "co poisoning", "co detector", "co alarm"],
+    "generator": ["generator", "generators", "portable generator"],
+    "gas-leak": ["gas leak", "smell gas", "natural gas", "gas line", "gas shutoff", "turn off the gas", "propane"],
+    "mental-health": ["stress", "coping", "mental health", "distress", "anxiety", "emotional", "disaster distress"],
+    "recovery-cleanup": ["cleanup", "clean up", "mold", "returning home", "return home", "damage", "recovery", "debris", "disinfect"],
+    "kit-supplies": ["emergency kit", "supply kit", "supplies", "flashlight", "batteries", "non-perishable", "checklist", "first aid kit", "kit"],
+    "plan": ["emergency plan", "make a plan", "family plan", "meeting place", "plan ahead", "household plan"],
+    "home-safety-retrofit": ["secure", "bolt", "retrofit", "strap", "anchor", "water heater", "bookcase", "foundation", "cripple wall", "soft story"]
+  },
+  "phases": {
+    "before": ["before", "prepare", "prepare now", "get ready", "preparedness", "be prepared", "plan", "ahead of", "in advance", "prevent", "secure your space"],
+    "during": ["during", "survive during", "stay safe during", "when it happens", "right now", "immediately", "in the event", "if you are"],
+    "after": ["after", "be safe after", "afterward", "recover", "recovery", "returning home", "clean up", "cleanup", "following a"]
+  }
+}

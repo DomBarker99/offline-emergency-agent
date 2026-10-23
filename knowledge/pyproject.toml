@@ -8,6 +8,7 @@ dependencies = [
   "beautifulsoup4>=4.12",
   "markdownify>=0.13",
   "pypdf>=5.0",
+  "cognee==1.6.5",
 ]
 
 [tool.uv]
