@@ -251,8 +251,13 @@ class Collector:
             dropped = words(info["droppedText"])
             visible = words(info["visibleText"]) - dropped  # words the reader sees in content, not navigation
             got = words(md)
-            coverage = round(len(visible & got) / len(visible), 4) if visible else 0.0
-            missing = sorted(visible - got)[:40]
+            # Browsers sometimes glue words from neighbouring menu items together in visible text
+            # ("chill" + "polar" -> "chillpolar"). Such a word still counts as present when it appears in
+            # the Markdown once spaces and punctuation are removed.
+            squashed = re.sub(r"[^a-z]", "", md.lower())
+            missing_all = sorted(w for w in visible - got if re.sub(r"[^a-z]", "", w) not in squashed)
+            coverage = round(1 - len(missing_all) / len(visible), 4) if visible else 0.0
+            missing = missing_all[:40]
 
             out.mkdir(parents=True, exist_ok=True)
             (out / "page.raw.html").write_bytes(raw_html)

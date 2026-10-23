@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node --env-file-if-exists=.env src/dev/smoke.ts",
     "smoke:local": "node --env-file-if-exists=.env src/dev/smoke.ts local",
-    "smoke:openrouter": "node --env-file-if-exists=.env src/dev/smoke.ts openrouter"
+    "smoke:openrouter": "node --env-file-if-exists=.env src/dev/smoke.ts openrouter",
+    "bench": "node --env-file-if-exists=.env src/dev/bench.ts",
+    "knowledge": "cd knowledge && uv run --env-file ../.env python serve.py --pack ${KNOWLEDGE_PACK:-../data/pack/library-v1}"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

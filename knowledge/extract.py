@@ -57,7 +57,9 @@ def is_link_list(lines: list[str]) -> bool:
     content = [l for l in lines if l.strip()]
     if not content:
         return True
-    linky = sum(1 for l in content if re.fullmatch(r"\s*[-*]?\s*\[[^\]]*\]\([^)]*\)\s*\.?\s*", l))
+    # A line is "linky" when nothing but links (and bullet/separator characters) is left on it,
+    # e.g. "- [Floods](...)" or a tab menu "[Flood Safety](...)[Turn Around Don't Drown](...)".
+    linky = sum(1 for l in content if "](" in l and not LINK_RE.sub("", l).strip(" \t-*|\u00b7\u2022.,"))
     return linky / len(content) >= LINK_ONLY_SHARE
 
 
