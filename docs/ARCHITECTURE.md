@@ -30,8 +30,8 @@ All agent logic lives in `src/core/` behind one function, `ask()`. Interfaces on
 
 | Step | File | What it does | AI? |
 | --- | --- | --- | --- |
-| 1. Safety router | `safety.ts` | Detects danger words (rising water, gas, fire, fuel-burning appliances indoors) and pins that scenario's `immediate` cards | No |
-| 2. Knowledge search | `knowledge.ts` | Returns the best-matching cards (up to 4) | No |
+| 1. Safety router | `safety.ts` | Detects danger words (rising water, gas, fire, fuel-burning appliances indoors, earthquake, heat illness) and pins that scenario's `immediate` cards | No |
+| 2. Knowledge search | `knowledge.ts`, `knowledge-cognee.ts`, `stores.ts` | Returns pinned cards, then the best-matching cards or library passages (up to 5). Short follow-ups are searched together with the previous question. | No |
 | 3. Prompt assembly | `prompt.ts` | Instructions (rules + household profile) and message (cards + situation + question) | No |
 | 4. Model call | `models.ts`, Agents SDK | Runs the agent on the provider and model chosen in `config/models.json` | Yes |
 | 5. Grounding check | `safety.ts` (output guardrail) | Flags missing or unknown citations, phone numbers and doses not present in the cards. Flags are returned, never hidden. | No |
@@ -41,11 +41,11 @@ All agent logic lives in `src/core/` behind one function, `ask()`. Interfaces on
 
 | Kind | Contents | Current implementation | Planned |
 | --- | --- | --- | --- |
-| Knowledge | Emergency cards | `data/demo/cards.json` with keyword ranking (`DemoKeywordStore`) | SQLite knowledge pack (full-text search, optionally vector search) behind the same `KnowledgeStore` interface |
+| Knowledge | Official library passages and action cards | `KNOWLEDGE_BACKEND=cognee`: a static Cognee pack searched by `knowledge/serve.py` (see [KNOWLEDGE.md](KNOWLEDGE.md)). `KNOWLEDGE_BACKEND=demo` (default): `data/demo/cards.json` with keyword ranking. Both sit behind the `KnowledgeStore` interface. | County and city sources, other languages |
 | Profile | Household facts, medications, meeting points | `data/demo/profile.json`, included in every prompt | Editable in the app, stored locally |
 | Situation and conversation | Current situation notes, prior turns | Sent by the interface with each request | Situation panel in the UI |
 
-Known limitation: keyword search has no notion of meaning or conversation context. A follow-up such as "what about the dog?" won't match a card about pet carriers. Semantic (vector) search or query rewriting addresses this.
+The demo keyword search has no notion of meaning. The Cognee backend adds meaning (vector) search and graph search, and both backends search short follow-ups ("what about the dog?") together with the previous question.
 
 ## Interfaces
 
@@ -62,10 +62,14 @@ Known limitation: keyword search has no notion of meaning or conversation contex
 config/models.json               logical model names → provider model IDs
 config/llama-server.example.ini  example local model server preset
 data/demo/                       placeholder cards and profile
+data/cards/                      action cards drafted from the library (reviewed by a person)
+data/eval/                       benchmark questions
+data/pack/                       built knowledge packs (git-ignored)
+knowledge/                       Python: collect, extract, build the pack, search service (see KNOWLEDGE.md)
 docs/                            documentation
 src/core/                        agent logic
 src/cli/chat.ts                  terminal chat
 src/server/http.ts               local HTTP API
-src/dev/                         provider smoke test without the SDK (npm run smoke)
+src/dev/                         provider smoke test (npm run smoke), benchmark (npm run bench)
 logs/                            audit logs (git-ignored)
 ```

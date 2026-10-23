@@ -4,14 +4,14 @@ An offline emergency response assistant. A small on-device language model answer
 
 Built for SpartHill Hacks 2026 (AI for Sustainable Impact).
 
-> **Status: early prototype.** The cards in `data/demo/` are placeholders, not vetted emergency guidance. This is not an emergency service.
+> **Status: early prototype.** The cards in `data/demo/` are placeholders. The official library (see [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)) holds word-for-word guidance from federal and California agencies, but the action cards drafted from it are not yet reviewed. This is not an emergency service.
 
 ## How it works
 
 Every question goes through six steps:
 
 1. **Safety router (plain rules).** Danger words such as rising water, gas or fire pin the matching "immediate action" cards.
-2. **Knowledge search.** Picks the most relevant cards.
+2. **Knowledge search.** Picks the most relevant cards, or passages from the official library through a local [Cognee](https://github.com/topoteretes/cognee) pack.
 3. **Prompt assembly.** Combines rules, household profile, cards and question.
 4. **Model call** via the [OpenAI Agents SDK](https://github.com/openai/openai-agents-js), to any OpenAI-compatible endpoint (a local model server, or OpenRouter).
 5. **Grounding check.** Flags answers that cite no card, or that contain numbers or doses not found in the cards.
@@ -40,13 +40,24 @@ The `local` provider expects an OpenAI-compatible server at `http://127.0.0.1:80
 llama-server --models-preset config/llama-server.example.ini --models-max 1
 ```
 
+### Official library (Cognee)
+
+The library is built once while online and searched offline by a small Python service. Full steps: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md).
+
+```sh
+npm run knowledge                                   # search service, 127.0.0.1:8788
+KNOWLEDGE_BACKEND=cognee npm run chat -- --provider openrouter
+```
+
 ## Configuration
 
 | File | Purpose |
 | --- | --- |
 | `config/models.json` | Logical model names (`gemma-26b`, `gpt-oss-20b`, `granite-8b`) mapped to each provider's model ID. The code only uses logical names. |
 | `config/llama-server.example.ini` | Example llama-server preset with per-model settings (e.g. turning reasoning off) |
-| `.env` (from `.env.example`, git-ignored) | API keys and endpoint overrides |
+| `.env` (from `.env.example`, git-ignored) | API keys, endpoint overrides, knowledge backend and build settings |
+| `knowledge/sources.json` | Allowlisted official publishers and crawl rules |
+| `knowledge/topics.json` | Topic grid (hazards, needs, phases) used to tag passages |
 
 ## License
 

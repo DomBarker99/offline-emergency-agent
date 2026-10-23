@@ -123,6 +123,12 @@ def main() -> int:
         for q in quotes:
             p = by_id.get(q.get("passage_id", ""))
             text = re.sub(r"^\s*[-\u2022*\d.)]+\s*", "", q.get("quote", "")).strip()
+            # Drop Markdown emphasis marks the page used for bold text; the words stay identical.
+            text = re.sub(r"\*\*|__|(?<!\w)\*(?!\s)|(?<!\s)\*(?!\w)", "", text).strip()
+            if text.endswith(":"):
+                # An introduction to a list ("...by doing the following:") is not an action by itself.
+                dropped.append(q)
+                continue
             if p and text and norm(text) in norm(p["text"]):
                 kept.append({"passageId": p["id"], "quote": text})
             else:
