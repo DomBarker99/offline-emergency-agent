@@ -32,8 +32,10 @@ from pathlib import Path
 from pack_config import DATASET, configure
 
 
-async def select_entities(max_entities: int) -> tuple[list[str], dict]:
-    """Entities mentioned by passages from 2+ publishers, most widely shared first."""
+async def select_entities(max_entities: int, max_mentions: int = 0) -> tuple[list[str], dict]:
+    """Entities mentioned by passages from 2+ publishers, most widely shared first.
+    max_mentions > 0 skips very broad entities ("water", "emergency"): each of those drags hundreds of
+    facts into one review call, which can take tens of minutes at high reasoning effort."""
     from cognee.infrastructure.databases.graph import get_graph_engine
     graph = await get_graph_engine()
     nodes, edges = await graph.get_graph_data()
@@ -53,7 +55,7 @@ async def select_entities(max_entities: int) -> tuple[list[str], dict]:
         if r == "contains" and s in chunk_source and props.get(t, {}).get("type") == "Entity":
             sources_of[t].add(chunk_source[s])
             mentions[t] += 1
-    shared = [e for e, srcs in sources_of.items() if len(srcs) >= 2]
+    shared = [e for e, srcs in sources_of.items() if len(srcs) >= 2 and (not max_mentions or mentions[e] <= max_mentions)]
     shared.sort(key=lambda e: (-len(sources_of[e]), -mentions[e], e))
     stats = {"entities": sum(1 for p in props.values() if p.get("type") == "Entity"),
              "entitiesWith2PlusSources": len(shared)}
@@ -113,7 +115,7 @@ async def run(args) -> dict:
     from cognee.memify_pipelines.review_conflicts import review_conflicts_pipeline
     from cognee.modules.users.methods import get_default_user
 
-    entity_ids, stats = await select_entities(args.max_entities)
+    entity_ids, stats = await select_entities(args.max_entities, args.max_mentions)
     print(f"{stats['entities']} entities; {stats['entitiesWith2PlusSources']} shared by 2+ publishers; reviewing up to {len(entity_ids)}", flush=True)
     user = await get_default_user()
     deadline = time.time() + args.max_minutes * 60
@@ -143,11 +145,18 @@ def main() -> int:
     ap.add_argument("--max-entities", type=int, default=1500)
     ap.add_argument("--max-minutes", type=float, default=90)
     ap.add_argument("--shard", type=int, default=100)
+    ap.add_argument("--max-mentions", type=int, default=0, help="skip entities mentioned by more passages than this")
+    ap.add_argument("--export-only", action="store_true", help="only export conflicts already recorded")
     args = ap.parse_args()
     pack = Path(args.pack).expanduser().resolve()
     args.pack = str(pack)
     configure(pack, mode="build")
     t = time.time()
+    if args.export_only:
+        import cognee  # noqa: F401
+        conflicts = asyncio.run(export_conflicts(pack, Path(args.corpus) if args.corpus else None))
+        print(f"exported {len(conflicts)} conflicts")
+        return 0
     result = asyncio.run(run(args))
     result["minutes"] = round((time.time() - t) / 60, 1)
     info_path = pack / "build-info.json"
