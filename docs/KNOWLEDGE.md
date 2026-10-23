@@ -51,11 +51,24 @@ All Cognee settings are in one file, `knowledge/pack_config.py`:
 
 ## How search works (`knowledge/serve.py`)
 
-Every search runs three methods over the pack and merges their rankings with Reciprocal Rank Fusion. A passage that ranks high on several lists wins.
+The service offers three methods over the pack, plus a fusion of all three:
 
-1. **Meaning (vector):** the question is embedded and compared with every passage.
-2. **Words (lexical):** BM25-style keyword ranking.
-3. **Graph:** the question is matched against the graph's entity names, for example "dog" matches "pets" and "pet carrier". Passages that mention those entities are added.
+1. **Meaning (`vector`, the default):** the question is embedded with the local model and compared with every passage in Cognee's LanceDB index.
+2. **Words (`lexical`):** Okapi BM25 keyword ranking over the same chunks. The index is built once at startup.
+3. **Graph (`graph`):** the question is matched against the graph's entity names, for example "dog" matches "pets" and "pet carrier". Passages that mention those entities are added.
+4. **`hybrid`:** the three rankings merged with Reciprocal Rank Fusion. Per-method weights are optional.
+
+Why `vector` is the default: on the 44 evaluation questions with known sources, using the first full library pack, results were as follows.
+
+| Method | Correct source ranked first | Correct source in top 5 |
+| --- | ---: | ---: |
+| `vector` | 84% | 100% |
+| `lexical` | 75% | 95% |
+| `graph` | 61% | 93% |
+| `hybrid` | 73% | 100% |
+| Old keyword search (`DemoKeywordStore` over the same library) | 61% | 82% |
+
+So the graph helps with conflict review but did not improve retrieval on these questions. Re-check this when questions or sources change: `npm run bench -- --part retrieval ...`.
 
 A short follow-up such as "What about the dog?" is searched together with the previous question (`retrievalQuery()` in `src/core/agent.ts`).
 
