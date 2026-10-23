@@ -53,6 +53,13 @@ def configure(pack_dir: Path, mode: str) -> None:
         "AUTO_FEEDBACK": "false",
         "IMPROVE_AUTO_ENABLED": "false",
         "PERSONALIZATION_ENABLED": "false",
+        # Graph database (Ladybug, a Kuzu fork) limits. Cognee's defaults reserve a 32 GB buffer pool and a
+        # 32 GB address range for the database. A full library build hit "Maximum database size reached"
+        # (pages written between checkpoints count, not the file size, which stayed under 1 GB). So: a much
+        # larger address range (virtual, costs nothing) and a buffer pool that fits a 24 GB laptop.
+        # Both must be powers of two.
+        "KUZU_MAX_DB_SIZE": str(1 << 40),
+        "KUZU_BUFFER_POOL_SIZE": str(1 << 32),
         # Keep the "which chunk supports this graph edge" evidence: needed for conflict review.
         "EDGE_EVIDENCE_ENABLED": "true",
         # Local single user; nothing sent anywhere.

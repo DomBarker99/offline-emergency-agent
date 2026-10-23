@@ -21,6 +21,7 @@ WHAT HAPPENS
 USAGE
   uv run --env-file ../.env python build_pack.py --pack ../data/pack/library-v1
   Options: --limit N (first N passages, for tests)  --sources fda,cdc  --no-conflicts  --batch 40
+           --resume   continue an interrupted build in the same folder (Cognee skips finished documents)
 """
 from __future__ import annotations
 
@@ -121,16 +122,19 @@ def main() -> int:
     ap.add_argument("--sources", default="")
     ap.add_argument("--batch", type=int, default=40, help="documents cognify processes concurrently")
     ap.add_argument("--no-conflicts", action="store_true")
+    ap.add_argument("--resume", action="store_true", help="continue an interrupted build in an existing pack folder")
     args = ap.parse_args()
     if not args.corpus:
         sys.exit("Set CORPUS_DIR or pass --corpus.")
     pack = Path(args.pack).expanduser().resolve()
-    if pack.exists() and any(pack.iterdir()):
+    if pack.exists() and any(pack.iterdir()) and not args.resume:
         sys.exit(f"{pack} is not empty. Packs are never updated in place: build into a new folder.")
     args.pack = str(pack)
     args.passages = str(Path(args.corpus).expanduser() / "passages.jsonl")
     configure(pack, mode="build")
     info = asyncio.run(build(args))
+    if args.resume:
+        info["resumed"] = True  # add() is a no-op for documents already stored; cognify skips finished ones
     (pack / "build-info.json").write_text(json.dumps(info, indent=2))
     print(json.dumps(info["timings"]), flush=True)
     return 0
