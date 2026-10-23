@@ -67,13 +67,25 @@ async def export_conflicts(pack: Path, corpus: Path | None) -> list[dict]:
     nodes, edges = await graph.get_graph_data()
     props = {str(n): p for n, p in nodes}
     passages = {json.loads(l)["id"]: json.loads(l) for l in open(pack / "passages.jsonl")}
+    def passage_of(node_id: str) -> dict | None:
+        """A source ID is a document chunk; its metadata names our passage."""
+        meta = props.get(str(node_id), {}).get("external_metadata") or {}
+        meta = json.loads(meta) if isinstance(meta, str) else meta
+        p = passages.get(meta.get("passage_id", ""))
+        if not p:
+            return None
+        return {"passage": p["id"], "publisher": p["publisher"], "url": p["url"], "pageDate": p.get("pageDate"),
+                "heading": p["heading"]}
+
     out = []
     for nid, p in props.items():
         if p.get("type") != "FactConflict":
             continue
         about = props.get(str(p.get("about_id")), {})
+        values = [props.get(str(v), {}).get("name") or str(v) for v in (p.get("values") or [])]
+        sources = [passage_of(s) or {"node": str(s)} for s in (p.get("sources") or [])]
         out.append({"id": nid, "about": about.get("name"), "attribute": p.get("attribute"), "kind": p.get("kind"),
-                    "status": p.get("status"), "text": p.get("text"), "values": p.get("values"), "sources": p.get("sources")})
+                    "status": p.get("status"), "text": p.get("text"), "values": values, "sources": sources})
     (pack / "conflicts.json").write_text(json.dumps(out, indent=2, default=str))
     if corpus:
         lines = ["# Conflicts between sources", "",
@@ -84,10 +96,13 @@ async def export_conflicts(pack: Path, corpus: Path | None) -> list[dict]:
                  f"{len(out)} conflicts recorded.", ""]
         for c in sorted(out, key=lambda c: (c["status"] != "unresolved", str(c["about"]))):
             lines += [f"## {c['about']}: {c['attribute']} ({c['status']}, {c['kind']})", "", str(c["text"] or ""), ""]
-            for v in c.get("values") or []:
-                lines.append(f"- value: {v}")
-            for s in c.get("sources") or []:
-                lines.append(f"- source: {s}")
+            lines.append("Entities involved: " + ", ".join(str(v) for v in c.get("values") or []))
+            lines.append("")
+            for src in c.get("sources") or []:
+                if "passage" in src:
+                    lines.append(f"- {src['publisher']}, page dated {src.get('pageDate') or 'n/a'}: {src['heading']} ({src['url']}), passage `{src['passage']}`")
+                else:
+                    lines.append(f"- graph node {src['node']}")
             lines.append("")
         (corpus / "CONFLICTS.md").write_text("\n".join(lines) + "\n")
     return out
