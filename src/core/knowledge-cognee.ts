@@ -118,7 +118,7 @@ export class CogneeStore implements KnowledgeStore {
       const res = await fetch(`${this.baseUrl}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, limit: opts.limit, mode: process.env.KNOWLEDGE_MODE ?? "hybrid" }),
+        body: JSON.stringify({ query, limit: opts.limit, mode: process.env.KNOWLEDGE_MODE ?? "vector" }),
         // Searches take milliseconds; anything this slow means the service is stuck.
         signal: AbortSignal.timeout(15_000),
       });

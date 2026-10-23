@@ -7,7 +7,7 @@ WHERE THIS FITS
   It binds to 127.0.0.1 only, configures Cognee WITHOUT any LLM (see pack_config.py), and never writes
   to the pack. Unplug the network and it works the same.
 
-WHAT A SEARCH DOES (mode "hybrid", the default)
+WHAT A SEARCH CAN DO (mode "vector" is the default; "hybrid" combines all three)
   Three ways of finding passages, all using Cognee's local indexes, then merged:
     1. meaning  ("vector"):  the question is embedded with the local model and compared with every chunk.
     2. words    ("lexical"): classic keyword ranking (BM25-style) over the same chunks.
@@ -85,7 +85,15 @@ class BM25:
 class SearchRequest(BaseModel):
     query: str
     limit: int = 6
-    mode: str = "hybrid"
+    mode: str = "vector"
+    # Optional per-method weights for hybrid fusion, e.g. {"vector": 1, "lexical": 0.5, "graph": 0.5}.
+    weights: dict[str, float] | None = None
+
+
+# Default weights for "hybrid" fusion (equal). On the evaluation questions, meaning (vector) search alone
+# ranked the right source first more often than any fusion we tried, so "vector" is the default mode and
+# "hybrid" stays available for comparison (see docs/KNOWLEDGE.md, "How search works").
+DEFAULT_WEIGHTS = {"vector": 1.0, "lexical": 1.0, "graph": 1.0}
 
 
 class PackIndex:
@@ -225,9 +233,10 @@ def create_app(index: PackIndex) -> FastAPI:
             timings[name] = round((time.perf_counter() - t) * 1000, 1)
         fused: dict[str, float] = defaultdict(float)
         found_by: dict[str, list[str]] = defaultdict(list)
+        weights = {**DEFAULT_WEIGHTS, **(req.weights or {})}
         for name, ranked in lists.items():
             for rank, pid in enumerate(ranked):
-                fused[pid] += 1.0 / (RRF_K + rank + 1)
+                fused[pid] += weights.get(name, 1.0) / (RRF_K + rank + 1)
                 found_by[pid].append(name)
         top = sorted(fused.items(), key=lambda x: -x[1])[: req.limit]
         hits = []

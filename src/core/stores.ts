@@ -7,7 +7,7 @@
  *   KNOWLEDGE_BACKEND=cognee  the official library through the Cognee pack service, plus action cards.
  *       KNOWLEDGE_URL   where the service listens (default http://127.0.0.1:8788)
  *       CARDS_FILE      action cards JSON (default data/cards/library-cards.json)
- *       KNOWLEDGE_MODE  hybrid (default) | vector | lexical | graph   (for comparisons)
+ *       KNOWLEDGE_MODE  vector (default) | hybrid | lexical | graph   (for comparisons)
  *
  * Start the service first:  npm run knowledge   (see package.json and knowledge/serve.py)
  */
