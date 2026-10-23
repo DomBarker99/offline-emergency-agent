@@ -32,8 +32,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import uvicorn
@@ -43,6 +45,41 @@ from pydantic import BaseModel
 from pack_config import DATASET, configure
 
 RRF_K = 60  # standard Reciprocal Rank Fusion constant: score = sum over lists of 1 / (RRF_K + rank)
+
+STOPWORDS = set("""a an and are as at be by can do does for from has have how i if in is it its my of on or our
+should so that the their then there these they this to was we what when where which who will with you your""".split())
+
+
+def tokenize(text: str) -> list[str]:
+    return [t for t in re.findall(r"[a-z0-9]+", text.lower()) if len(t) > 1 and t not in STOPWORDS]
+
+
+class BM25:
+    """Okapi BM25 keyword ranking over the pack's chunks, built ONCE at startup.
+    (Cognee has the same ranking as SearchType.CHUNKS_LEXICAL, but it rebuilds its statistics on every
+    query, which costs about a second on a full pack. Same idea, computed once.)"""
+
+    def __init__(self, docs: dict[str, str], k1: float = 1.2, b: float = 0.75):
+        self.k1, self.b = k1, b
+        self.tf = {cid: Counter(tokenize(t)) for cid, t in docs.items()}
+        self.len = {cid: sum(c.values()) for cid, c in self.tf.items()}
+        self.avg = sum(self.len.values()) / max(1, len(self.len))
+        df = Counter(term for c in self.tf.values() for term in c)
+        n = len(self.tf)
+        self.idf = {term: math.log(1 + (n - d + 0.5) / (d + 0.5)) for term, d in df.items()}
+
+    def search(self, query: str, k: int) -> list[str]:
+        q = set(tokenize(query))
+        scores = {}
+        for cid, tf in self.tf.items():
+            s = 0.0
+            for term in q:
+                f = tf.get(term)
+                if f:
+                    s += self.idf[term] * f * (self.k1 + 1) / (f + self.k1 * (1 - self.b + self.b * self.len[cid] / self.avg))
+            if s > 0:
+                scores[cid] = s
+        return [cid for cid, _ in sorted(scores.items(), key=lambda x: -x[1])[:k]]
 
 
 class SearchRequest(BaseModel):
@@ -61,6 +98,7 @@ class PackIndex:
         self.text_to_passage: dict[str, str] = {}
         self.entity_to_chunks: dict[str, set[str]] = defaultdict(set)
         self.info: dict = {}
+        self.bm25: BM25 | None = None  # built in load()
 
     async def load(self) -> None:
         from cognee.infrastructure.databases.graph import get_graph_engine
@@ -93,10 +131,13 @@ class PackIndex:
             src, dst = str(src), str(dst)
             if rel == "contains" and src in self.chunk_to_passage and props.get(dst, {}).get("type") == "Entity":
                 self.entity_to_chunks[dst].add(src)                      # chunk mentions entity
+        chunk_texts = {}
         for cid, pid in self.chunk_to_passage.items():
             t = props.get(cid, {}).get("text")
             if t:
                 self.text_to_passage[t.strip()[:200]] = pid
+                chunk_texts[cid] = t
+        self.bm25 = BM25(chunk_texts)
         self.info.update({"graphNodes": len(nodes), "graphEdges": len(edges), "chunksMapped": len(self.chunk_to_passage),
                           "entitiesLinked": len(self.entity_to_chunks), "passagesLoaded": len(self.passages)})
 
@@ -121,15 +162,13 @@ async def vector_hits(index: PackIndex, query: str, k: int) -> list[str]:
 
 
 async def lexical_hits(index: PackIndex, query: str, k: int) -> list[str]:
-    import cognee
-    from cognee.modules.search.types import SearchType
-    res = await cognee.search(query, query_type=SearchType.CHUNKS_LEXICAL, top_k=k, datasets=[DATASET])
+    """Keyword (BM25) ranking over the same chunks Cognee indexed (see the BM25 class)."""
     out = []
-    for r in res:
-        pid = index.passage_for_result(r)
+    for cid in index.bm25.search(query, k * 2):
+        pid = index.chunk_to_passage.get(cid)
         if pid and pid not in out:
             out.append(pid)
-    return out
+    return out[:k]
 
 
 async def graph_hits(index: PackIndex, query: str, k: int, entities: int = 8) -> list[str]:
