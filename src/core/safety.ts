@@ -57,6 +57,18 @@ const DANGER_RULES: DangerRule[] = [
     scenario: "power-outage",
     pattern: /\b(generator|grill|camp stove|carbon monoxide)\b[^.?!]*\b(inside|indoors|garage|kitchen|house)\b/i,
   },
+  {
+    // Shaking happening now, or the aftermath where people get hurt (gas, aftershocks).
+    id: "earthquake",
+    scenario: "earthquake",
+    pattern: /\b(earthquake|quake|shaking|aftershock|terremoto|temblor)\b/i,
+  },
+  {
+    // Heat illness signs: these need action now, not a reading list.
+    id: "heat",
+    scenario: "extreme-heat",
+    pattern: /\b(heat ?stroke|heat exhaustion|overheat(ing|ed)?|too hot|stopped sweating|golpe de calor)\b/i,
+  },
 ];
 
 /** Result of routeSafety(). */

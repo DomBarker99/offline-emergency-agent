@@ -14,7 +14,7 @@
 import type { Card, Profile, Situation } from "./types.ts";
 
 /** Version label for the current rules. Format: date + counter. */
-export const PROMPT_VERSION = "2026-10-22.1";
+export const PROMPT_VERSION = "2026-10-23.1";
 
 /**
  * Builds the instructions: behavior rules first, then the household profile.
@@ -23,8 +23,10 @@ export const PROMPT_VERSION = "2026-10-22.1";
 export function buildInstructions(profile: Profile): string {
   const rules = [
     "You are an offline emergency assistant running on the user's laptop with no internet.",
-    // Grounding: answers must come from the cards, and say which card.
-    "Answer ONLY from the cards provided with each question. Cite card IDs in square brackets, e.g. [C2].",
+    // Grounding: answers must come from the cards/passages, and say which one.
+    "Answer ONLY from the cards and official passages provided with each question. Cite their IDs in square brackets after each step, e.g. [C2] or [L1].",
+    // Library passages come from different official publishers and pages; some cover other places.
+    "Cards [C..] are short action cards. Passages [L..] are excerpts from official sources (publisher and date shown). Prefer the most specific, most recent source; if passages disagree, say so briefly.",
     // People under stress need short, ordered steps.
     "Be brief: numbered steps, at most 6.",
     // Honest abstention instead of guessing. The exact phrase is also detected by safety.ts.
@@ -61,9 +63,18 @@ export function buildInstructions(profile: Profile): string {
  *   Question: Should I drive to the meeting point?
  */
 export function buildUserMessage(cards: Card[], situation: Situation | undefined, question: string): string {
-  // Each card on its own line, prefixed with the ID the model must cite.
+  // Each card on its own line(s), prefixed with the ID the model must cite. Library passages also
+  // show their publisher and date so the model can prefer current, specific guidance.
   const cardText = cards.length
-    ? cards.map((c) => `[${c.id}] ${c.title.toUpperCase()}: ${c.body}`).join("\n")
+    ? cards
+        .map((c) => {
+          if (c.kind === "passage") {
+            const when = c.source.updated ? `, updated ${c.source.updated}` : "";
+            return `[${c.id}] ${c.title} (${c.source.name}${when}):\n${c.body}`;
+          }
+          return `[${c.id}] ${c.title.toUpperCase()}: ${c.body}`;
+        })
+        .join("\n\n")
     : "(no matching cards)";
 
   // Only add a situation line if there is something in it.

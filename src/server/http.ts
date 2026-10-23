@@ -23,7 +23,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFileSync } from "node:fs";
 import { ask } from "../core/agent.ts";
 import { loadModels } from "../core/config.ts";
-import { loadDemoStore } from "../core/knowledge.ts";
+import { createStore } from "../core/stores.ts";
 import type { AskRequest, Profile } from "../core/types.ts";
 
 const HOST = "127.0.0.1"; // loopback only: never exposed to the network
@@ -32,7 +32,8 @@ const MAX_BODY = 64 * 1024; // reject request bodies over 64 KB
 const MAX_QUESTION_CHARS = 2000;
 
 // Loaded once at startup and shared by all requests.
-const store = loadDemoStore();
+// Which knowledge to use comes from KNOWLEDGE_BACKEND (see src/core/stores.ts).
+const store = createStore();
 const profile = JSON.parse(
   readFileSync(new URL("../../data/demo/profile.json", import.meta.url), "utf8"),
 ) as Profile;

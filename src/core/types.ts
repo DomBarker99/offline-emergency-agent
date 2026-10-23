@@ -15,8 +15,18 @@ import type { ProviderName } from "./config.ts";
  * cards it is shown and to cite them by `id`, so every answer can be traced to a source.
  */
 export interface Card {
-  /** Stable, short ID the model cites in square brackets, e.g. "C4" -> "[C4]". */
+  /**
+   * Short ID the model cites in square brackets, e.g. "C4" -> "[C4]".
+   * Cards keep a fixed ID (C1, C2...). Library passages get a per-question alias (L1, L2...)
+   * because their real IDs are long; the real ID is kept in `ref`.
+   */
   id: string;
+  /** Stable ID of a library passage, e.g. "ready-gov:floods:3" (undefined for cards). */
+  ref?: string;
+  /** "card" = short reviewed action card; "passage" = text from the official library. Default "card". */
+  kind?: "card" | "passage";
+  /** false = drafted from the library but not yet reviewed by a person. */
+  reviewed?: boolean;
   title: string;
   /** Which emergencies this card applies to, e.g. ["flood", "evacuation"]. */
   scenarios: string[];
@@ -29,8 +39,11 @@ export interface Card {
   danger: "immediate" | "urgent" | "info";
   /** The text the model reads. Keep it short and unambiguous. */
   body: string;
-  /** Where the content came from, shown to the user next to the answer. */
-  source: { name: string; url?: string; retrieved?: string };
+  /**
+   * Where the content came from, shown to the user next to the answer.
+   * name = publisher; retrieved = when we fetched it; updated = the date the page itself shows.
+   */
+  source: { name: string; url?: string; retrieved?: string; updated?: string };
   /** true = placeholder content for development, not vetted guidance. */
   demo?: boolean;
 }
@@ -83,8 +96,13 @@ export interface AskResponse {
   /** Unique ID for this question; matches the line written to the audit log. */
   turnId: string;
   answer: string;
-  /** Cards shown to the model, in order. `pinned` = forced in by the safety router. */
-  cards: { id: string; title: string; pinned: boolean; source: Card["source"] }[];
+  /**
+   * Cards and passages shown to the model, in order. `pinned` = forced in by the safety router.
+   * `ref` is the stable library passage ID behind a per-question alias such as "L2".
+   */
+  cards: { id: string; ref?: string; kind?: Card["kind"]; title: string; pinned: boolean; source: Card["source"] }[];
+  /** The text actually used to search the knowledge (the question, plus context for follow-ups). */
+  retrievalQuery?: string;
   /** Danger rules that matched the question, e.g. ["flood"]. */
   dangers: string[];
   /** Problems found in the answer by the grounding check, e.g. ["no-citation"]. Empty = none. */
