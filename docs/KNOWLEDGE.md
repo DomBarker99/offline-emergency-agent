@@ -84,6 +84,8 @@ uv run --env-file ../.env python collect.py            # --only cdc,nws  --force
 uv run --env-file ../.env python extract.py
 # 3. build a NEW pack folder (packs are never updated in place)
 uv run --env-file ../.env python build_pack.py --pack ../data/pack/library-v1
+# 3b. conflict review (slow at high reasoning effort; time-boxed). Writes CONFLICTS.md into the corpus.
+uv run --env-file ../.env python review_conflicts.py --pack ../data/pack/library-v1 --max-minutes 60 --max-mentions 40 --shard 10
 # 4. draft action cards for review
 uv run --env-file ../.env python draft_cards.py --out ../data/cards/library-cards.json
 cd ..
