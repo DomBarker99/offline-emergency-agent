@@ -1,0 +1,257 @@
+{
+  "$comment": [
+    "Source registry for the knowledge library: which official publishers we collect from, how, and under what reuse terms.",
+    "Read by knowledge/collect.py. Each source lists seed URLs plus optional crawl rules (follow links that match 'include' and not 'exclude', up to 'depth' hops and 'maxPages' pages).",
+    "'browser' is 'headless' (invisible Chrome) or 'headed' (a visible Chrome window, needed for sites that block automated browsers).",
+    "'mainSelectors' are CSS selectors tried in order to find the page's main content (navigation, headers and footers are left out).",
+    "'pdfs' optionally captures PDFs linked from collected pages whose URL matches 'include'.",
+    "'documents' are PDFs captured directly by URL.",
+    "Trust rule: only allowlisted official publishers; captured text is never edited. 'tier' records how official the publisher is."
+  ],
+  "sources": [
+    {
+      "id": "ready-gov",
+      "publisher": "FEMA (Ready.gov)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105). Individual images may be third-party.",
+      "browser": "headless",
+      "mainSelectors": ["main"],
+      "seeds": [
+        "https://www.ready.gov/wildfires", "https://www.ready.gov/heat", "https://www.ready.gov/floods",
+        "https://www.ready.gov/tornadoes", "https://www.ready.gov/hurricanes", "https://www.ready.gov/thunderstorms-lightning",
+        "https://www.ready.gov/winter-weather", "https://www.ready.gov/drought", "https://www.ready.gov/tsunamis",
+        "https://www.ready.gov/landslides-debris-flow", "https://www.ready.gov/volcanoes", "https://www.ready.gov/earthquakes",
+        "https://www.ready.gov/space-weather", "https://www.ready.gov/severe-weather", "https://www.ready.gov/home-fires",
+        "https://www.ready.gov/pandemic", "https://www.ready.gov/cybersecurity", "https://www.ready.gov/hazmat",
+        "https://www.ready.gov/power-outages", "https://www.ready.gov/radiation", "https://www.ready.gov/biohazard",
+        "https://www.ready.gov/explosions", "https://www.ready.gov/household-chemical-emergencies", "https://www.ready.gov/avalanche",
+        "https://www.ready.gov/mass-gatherings-incidents", "https://www.ready.gov/alerts", "https://www.ready.gov/plan-ahead-disasters",
+        "https://www.ready.gov/water", "https://www.ready.gov/shelter", "https://www.ready.gov/evacuation",
+        "https://www.ready.gov/recovering-disaster", "https://www.ready.gov/coping-disaster", "https://www.ready.gov/financial-preparedness",
+        "https://www.ready.gov/people-disabilities", "https://www.ready.gov/pets", "https://www.ready.gov/safety-skills",
+        "https://www.ready.gov/preparing-your-own-containers-water", "https://www.ready.gov/storing-water-plastic-soda-bottles",
+        "https://www.ready.gov/food", "https://www.ready.gov/get-tech-ready", "https://www.ready.gov/plan-for-locations",
+        "https://www.ready.gov/older-adults", "https://www.ready.gov/car", "https://www.ready.gov/kit", "https://www.ready.gov/plan",
+        "https://www.ready.gov/be-informed", "https://www.ready.gov/home-fire-escape-plan", "https://www.ready.gov/low-and-no-cost",
+        "https://www.ready.gov/summer-ready", "https://www.ready.gov/winter-ready", "https://www.ready.gov/home-safety",
+        "https://www.ready.gov/preventing-falls-home", "https://www.ready.gov/preventing-poisonings-home",
+        "https://www.ready.gov/preventing-and-treating-burns", "https://www.ready.gov/caregivers", "https://www.ready.gov/campus"
+      ],
+      "follow": {
+        "depth": 1,
+        "maxPages": 110,
+        "include": ["^https://www\\.ready\\.gov/[a-z0-9-]+$"],
+        "exclude": ["/(kids|business|about-us|webform|calendar|videos|fema-app|get-involved|toolkits|resources|publications|local|stand-ready|ready-your-language|collection|node)$",
+                    "toolkit", "social-media", "webinar", "fifa", "national-preparedness-month", "-old$", "plan-submit", "pledge", "testimonials", "thanks-your-question"]
+      },
+      "pdfs": { "include": ["hazard-info-sheet", "emergency-supply-list", "kit-checklist"], "max": 40 }
+    },
+    {
+      "id": "cdc",
+      "publisher": "Centers for Disease Control and Prevention (CDC)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "Public domain text unless marked otherwise; some images are copyrighted (cdc.gov/other/agencymaterials.html).",
+      "browser": "headless",
+      "mainSelectors": ["main"],
+      "seeds": [
+        "https://www.cdc.gov/natural-disasters/index.html", "https://www.cdc.gov/natural-disasters/safety/index.html",
+        "https://www.cdc.gov/natural-disasters/response/index.html", "https://www.cdc.gov/natural-disasters/about/index.html",
+        "https://www.cdc.gov/earthquakes/about/index.html", "https://www.cdc.gov/floods/about/index.html",
+        "https://www.cdc.gov/heat-health/about/index.html", "https://www.cdc.gov/hurricanes/about/index.html",
+        "https://www.cdc.gov/landslides-and-mudslides/about/index.html", "https://www.cdc.gov/tornadoes/about/index.html",
+        "https://www.cdc.gov/tsunamis/about/index.html", "https://www.cdc.gov/volcanoes/about/index.html",
+        "https://www.cdc.gov/wildfires/about/index.html", "https://www.cdc.gov/winter-weather/about/index.html",
+        "https://www.cdc.gov/carbon-monoxide/about/index.html"
+      ],
+      "follow": {
+        "depth": 2,
+        "maxPages": 150,
+        "include": ["^https://www\\.cdc\\.gov/(natural-disasters|earthquakes|floods|heat-health|hurricanes|landslides-and-mudslides|tornadoes|tsunamis|volcanoes|wildfires|winter-weather|carbon-monoxide|power-outages|mold)/.+\\.html$"],
+        "exclude": ["/php/", "/hcp/", "communication-resources", "psa-toolkit", "/media/", "/spanish/", "site\\.html$", "/data-research/", "toolkit", "/es/", "/media-", "/training/", "/funding/", "/partners/", "-surveillance", "/php-"]
+      }
+    },
+    {
+      "id": "nws",
+      "publisher": "National Weather Service (NOAA)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "browser": "headless",
+      "mainSelectors": [".center-content", ".cms-content", "#content"],
+      "seeds": ["https://www.weather.gov/safety/"],
+      "follow": {
+        "depth": 2,
+        "maxPages": 100,
+        "include": ["^https://www\\.weather\\.gov/safety/[a-z0-9-]+$"],
+        "exclude": ["beach", "ripcurrent", "fog", "space", "hurricane", "marine", "education", "kids", "posters"]
+      }
+    },
+    {
+      "id": "fda",
+      "publisher": "U.S. Food and Drug Administration (FDA)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "browser": "headless",
+      "mainSelectors": ["main article", "main", "#main-content"],
+      "seeds": [
+        "https://www.fda.gov/drugs/emergency-preparedness-drugs/safe-drug-use-after-natural-disaster",
+        "https://www.fda.gov/drugs/emergency-preparedness-drugs/information-regarding-insulin-storage-and-switching-between-products-emergency",
+        "https://www.fda.gov/drugs/emergency-preparedness-drugs/natural-disaster-preparedness-and-response-drugs",
+        "https://www.fda.gov/consumers/consumer-updates/hurricane-season-be-prepared",
+        "https://www.fda.gov/food/buy-store-serve-safe-food/food-and-water-safety-during-power-outages-and-floods",
+        "https://www.fda.gov/food/food-safety-during-emergencies/floods-key-tips-consumers-about-food-and-water-safety",
+        "https://www.fda.gov/food/food-safety-during-emergencies/power-outages-key-tips-consumers-about-food-safety",
+        "https://www.fda.gov/food/food-safety-during-emergencies/after-storm-or-flooding-key-tips-consumers-about-food-safety",
+        "https://www.fda.gov/food/food-safety-during-emergencies/how-dispose-contaminated-or-spoiled-food",
+        "https://www.fda.gov/food/food-safety-during-emergencies/protect-food-and-water-during-hurricanes-and-other-storms",
+        "https://www.fda.gov/medical-devices/emergency-situations-medical-devices/fda-offers-tips-about-medical-devices-and-natural-disasters",
+        "https://www.fda.gov/medical-devices/emergency-situations-medical-devices/medical-devices-have-been-exposed-heat-and-humidity",
+        "https://www.fda.gov/medical-devices/emergency-situations-medical-devices/medical-devices-requiring-refrigeration",
+        "https://www.fda.gov/medical-devices/emergency-situations-medical-devices/disposal-contaminated-devices"
+      ]
+    },
+    {
+      "id": "usda-fsis",
+      "publisher": "USDA Food Safety and Inspection Service / FoodSafety.gov (HHS)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "browser": "headed",
+      "mainSelectors": ["main", "#main-content", "article"],
+      "seeds": [
+        "https://www.foodsafety.gov/food-safety-charts/food-safety-during-power-outage",
+        "https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/emergencies"
+      ],
+      "follow": {
+        "depth": 1,
+        "maxPages": 25,
+        "include": ["^https://www\\.fsis\\.usda\\.gov/food-safety/safe-food-handling-and-preparation/emergencies/.+",
+                    "^https://www\\.foodsafety\\.gov/(keep-food-safe|food-safety-charts)/.*(emergenc|disaster|power|outage|flood|hurricane|storm|fire)"],
+        "exclude": ["/es/", "espanol", "spanish"]
+      }
+    },
+    {
+      "id": "airnow-epa",
+      "publisher": "U.S. EPA (AirNow)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "browser": "headless",
+      "mainSelectors": ["main", "#main-content", ".main-content", "article"],
+      "seeds": ["https://www.airnow.gov/wildfires/", "https://www.epa.gov/smoke-ready-toolbox-wildfires"],
+      "follow": {
+        "depth": 1,
+        "maxPages": 30,
+        "include": ["^https://www\\.airnow\\.gov/wildfires/.+", "^https://www\\.epa\\.gov/smoke-ready-toolbox-wildfires/.+"],
+        "exclude": ["/es/", "espanol", "spanish", "toolkit", "-for-public-health", "media", "partners"]
+      }
+    },
+    {
+      "id": "samhsa",
+      "publisher": "SAMHSA (HHS)",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "browser": "headless",
+      "mainSelectors": ["main", "#main-content", "article"],
+      "seeds": ["https://www.samhsa.gov/find-help/disaster-distress-helpline"]
+    },
+    {
+      "id": "listos-ca",
+      "publisher": "Listos California (Cal OES)",
+      "jurisdiction": "CA",
+      "tier": "state",
+      "reuse": "State of California public content. Reuse terms not yet verified; see the site's terms page.",
+      "browser": "headless",
+      "mainSelectors": ["main", "#main", "#content", "article"],
+      "seeds": [
+        "https://www.listoscalifornia.org/disaster-readiness/", "https://www.listoscalifornia.org/disaster-readiness/extreme-heat/",
+        "https://www.listoscalifornia.org/disaster-readiness/wildfires/", "https://www.listoscalifornia.org/disaster-readiness/wildfire-smoke/",
+        "https://www.listoscalifornia.org/disaster-readiness/power-outage/", "https://www.listoscalifornia.org/disaster-readiness/floods/",
+        "https://www.listoscalifornia.org/disaster-readiness/fast-and-cold-water/", "https://www.listoscalifornia.org/disaster-readiness/severe-storms/",
+        "https://www.listoscalifornia.org/disaster-readiness/earthquakes/", "https://www.listoscalifornia.org/be-a-ready-family/",
+        "https://www.listoscalifornia.org/alerts/", "https://www.listoscalifornia.org/recovery-help/",
+        "https://www.listoscalifornia.org/stormseason/", "https://www.listoscalifornia.org/el-nino-in-california/",
+        "https://www.listoscalifornia.org/terms-conditions/"
+      ]
+    },
+    {
+      "id": "calfire",
+      "publisher": "CAL FIRE (Ready for Wildfire)",
+      "jurisdiction": "CA",
+      "tier": "state",
+      "reuse": "State of California public content. Reuse terms not yet verified.",
+      "browser": "headed",
+      "mainSelectors": ["main", "#main", "#content", "article"],
+      "seeds": ["https://www.readyforwildfire.org/"],
+      "follow": {
+        "depth": 2,
+        "maxPages": 45,
+        "include": ["^https://www\\.readyforwildfire\\.org/[a-z0-9-]+(/[a-z0-9-]+)*/?$"],
+        "exclude": ["/es/", "espanol", "spanish", "/news", "/blog", "/media", "/press", "/contact", "/search", "/wp-", "/tag/", "/category/", "/author/", "/feed", "/events"]
+      }
+    },
+    {
+      "id": "eca",
+      "publisher": "Earthquake Country Alliance (with USGS and Cal OES)",
+      "jurisdiction": "CA",
+      "tier": "official-partnership",
+      "reuse": "Non-government public-private partnership. Reuse terms not yet verified; treat as library-only until checked.",
+      "browser": "headless",
+      "mainSelectors": ["main", "#main", "#content", "article", ".entry-content"],
+      "seeds": [
+        "https://www.earthquakecountry.org/sevensteps/", "https://www.earthquakecountry.org/prepare/",
+        "https://www.earthquakecountry.org/survive/", "https://www.earthquakecountry.org/recover/",
+        "https://www.earthquakecountry.org/step1/", "https://www.earthquakecountry.org/step2/", "https://www.earthquakecountry.org/step3/",
+        "https://www.earthquakecountry.org/step4/", "https://www.earthquakecountry.org/step5/", "https://www.earthquakecountry.org/step6/",
+        "https://www.earthquakecountry.org/step7/", "https://www.earthquakecountry.org/dropcoverholdon/",
+        "https://www.earthquakecountry.org/stayingsafe/", "https://www.earthquakecountry.org/bayarearisk/",
+        "https://www.earthquakecountry.org/risk/", "https://www.earthquakecountry.org/booklets/",
+        "https://www.earthquakecountry.org/step1/waterheater/", "https://www.earthquakecountry.org/step1/cabinets/",
+        "https://www.earthquakecountry.org/step1/food/", "https://www.earthquakecountry.org/step1/refrigerators/",
+        "https://www.earthquakecountry.org/step1/bookcases/", "https://www.earthquakecountry.org/step1/televisions/",
+        "https://www.earthquakecountry.org/step1/objects/", "https://www.earthquakecountry.org/step1/hangingobjects/",
+        "https://www.earthquakecountry.org/step1/chemicals/", "https://www.earthquakecountry.org/step1/propanetanks/",
+        "https://www.earthquakecountry.org/step1/glass/", "https://www.earthquakecountry.org/step1/gassafety/",
+        "https://www.earthquakecountry.org/step1/spaceheaters/", "https://www.earthquakecountry.org/step1/ceilinglights/",
+        "https://www.earthquakecountry.org/step4/notbolted/", "https://www.earthquakecountry.org/step4/cripplewalls/",
+        "https://www.earthquakecountry.org/step4/postandpier/", "https://www.earthquakecountry.org/step4/chimneys/",
+        "https://www.earthquakecountry.org/step4/softstories/", "https://www.earthquakecountry.org/step4/mobilehomes/",
+        "https://www.earthquakecountry.org/step4/overgarages/", "https://www.earthquakecountry.org/step4/steepslopes/"
+      ],
+      "pdfs": { "include": ["(?i)staying.?safe", "(?i)bay.?area", "(?i)putting.?down.?roots"], "max": 4 }
+    },
+    {
+      "id": "cdph",
+      "publisher": "California Department of Public Health (CDPH)",
+      "jurisdiction": "CA",
+      "tier": "state",
+      "reuse": "State of California public content. Reuse terms not yet verified.",
+      "browser": "headless",
+      "mainSelectors": ["#ctl00_PlaceHolderMain_ctl01__ControlWrapper_RichHtmlField", "main", "#DeltaPlaceHolderMain", "#contentBox", "article"],
+      "seeds": ["https://www.cdph.ca.gov/Programs/EPO/Pages/default.aspx"],
+      "follow": {
+        "depth": 2,
+        "maxPages": 35,
+        "include": ["^https://www\\.cdph\\.ca\\.gov/Programs/EPO/Pages/.+\\.aspx$"],
+        "exclude": ["(?i)(hospital|healthcare|health-care|partner|grant|contract|training|exercise|lhd|job|career|staff|program_|_es\\.aspx|spanish|archive|funding|pandemicflu|cbrne|mhoac|medical-reserve)"]
+      }
+    }
+  ],
+  "documents": [
+    {
+      "id": "fema-are-you-ready",
+      "sourceId": "ready-gov",
+      "publisher": "FEMA",
+      "jurisdiction": "US",
+      "tier": "federal",
+      "title": "Are You Ready? An In-depth Guide to Citizen Preparedness (2020 edition, via GovInfo)",
+      "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
+      "reuse": "US federal government work, generally public domain (17 U.S.C. 105).",
+      "note": "Older than current Ready.gov pages. Ready.gov wins when they disagree."
+    }
+  ]
+}

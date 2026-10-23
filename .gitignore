@@ -8,3 +8,10 @@ logs/
 .env
 .env.*
 !.env.example
+
+# Python tooling for the knowledge pipeline
+knowledge/.venv/
+__pycache__/
+*.pyc
+# Built knowledge pack (Cognee databases); rebuilt from the corpus, never committed
+data/pack/
