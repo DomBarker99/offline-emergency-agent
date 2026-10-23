@@ -102,13 +102,17 @@ export async function ask(req: AskRequest, deps: AgentDeps): Promise<AskResponse
   const provider = req.provider ?? "local";
   const { runner, model } = createModelHandle(provider, req.model);
 
+  // The question, plus the previous question when this one is a short follow-up (see retrievalQuery).
+  // Both the safety router and the search use it, so "What about the dog?" asked right after
+  // "our street is flooding" still counts as a flood question.
+  const query = retrievalQuery(req.question, req.history);
+
   // ----- Step 1: safety router ---------------------------------------------------
   // e.g. "water is rising" -> dangers ["flood"], pinnedIds ["C1"]
-  const route = routeSafety(req.question, deps.store);
+  const route = routeSafety(query, deps.store);
 
   // ----- Step 2: knowledge search ------------------------------------------------
   // Pinned cards come first, then the best matches, up to MAX_CARDS.
-  const query = retrievalQuery(req.question, req.history);
   const hits = await deps.store.search(query, { limit: MAX_CARDS, pinnedIds: route.pinnedIds });
   const cards = hits.map((hit) => hit.card);
   const tRetrieval = performance.now();
