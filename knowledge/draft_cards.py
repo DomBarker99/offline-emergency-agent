@@ -139,7 +139,8 @@ def main() -> int:
         main_p = by_id[kept[0]["passageId"]]
         cards.append({
             "id": spec["id"], "title": spec["title"], "scenarios": [spec["scenario"]], "danger": "immediate",
-            "body": " ".join(k["quote"] if k["quote"].endswith((".", "!", "?")) else k["quote"] + "." for k in kept),
+            # Join the quotes into one paragraph; add a period only where a quote has no closing punctuation.
+            "body": " ".join(k["quote"] if k["quote"].rstrip("\"'\u201d\u2019)").endswith((".", "!", "?")) else k["quote"] + "." for k in kept),
             "source": {"name": main_p["publisher"], "url": main_p["url"], "retrieved": main_p["fetchedAt"][:10],
                        "updated": main_p.get("pageDate") or None},
             "reviewed": False,
