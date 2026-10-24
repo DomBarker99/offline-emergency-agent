@@ -143,7 +143,12 @@ footer { flex: none; padding: 2px 12px 8px; text-align: center; font-size: 12px;
          background: var(--green-soft); color: var(--green); transition: background .4s, color .4s; }
 .model::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .model.local { background: #f3ead9; color: #85612a; }
-.thread { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+/* No scroll-behavior: smooth here. A smooth scroll that is still running when the next message (or the
+   chips) arrives stops short of the newest message. Scrolling is instant; new messages fade in instead.
+   position: relative makes each message's offsetTop relative to the thread (used by showAnswer). */
+.thread { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+.thread > .msg, .thread > .followups { animation: arrive .2s ease-out; }
+@keyframes arrive { from { opacity: 0; transform: translateY(6px); } }
 /* The thread is a flex column. Flex items shrink by default (flex-shrink: 1), so once the conversation
    is taller than the thread, messages and chips would be squashed into each other instead of the
    thread scrolling. flex-shrink: 0 keeps every item at its natural height. */
@@ -164,7 +169,7 @@ footer { flex: none; padding: 2px 12px 8px; text-align: center; font-size: 12px;
 .typing .dot { width: 7px; height: 7px; border-radius: 50%; background: #9aa3a6; animation: bounce 1.2s infinite; }
 .typing .dot:nth-child(2) { animation-delay: .15s; } .typing .dot:nth-child(3) { animation-delay: .3s; }
 @keyframes bounce { 30% { transform: translateY(-5px); opacity: .6; } }
-.followups { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; }
+.followups { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; margin-top: -4px; } /* close to their answer */
 .chip { border: 1px solid #cfd8cf; background: #fff; border-radius: 999px; padding: 8px 14px; font-size: 14px; }
 .chip:hover { background: var(--green-soft); }
 .chip:disabled { opacity: .5; cursor: default; }
@@ -206,8 +211,10 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
 /* ---- Launch alert ---------------------------------------------------------------------------------- */
 .launch { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: #1e262bcc; padding: 24px; animation: fade .3s; }
 @keyframes fade { from { opacity: 0; } }
-.launch-box { background: var(--panel); border-radius: 26px; padding: 30px 34px; max-width: 560px; width: 100%; border-top: 10px solid var(--alert);
-              box-shadow: 0 30px 80px #0005; }
+/* The red stripe on top is painted in the background (not a border-top), so it follows the rounded
+   corners instead of curving inward at the ends. */
+.launch-box { background: linear-gradient(var(--alert) 0 10px, var(--panel) 10px); border-radius: 26px; padding: 40px 34px 30px;
+              max-width: 560px; width: 100%; box-shadow: 0 30px 80px #0005; }
 .launch-box .eyebrow { color: var(--alert); }
 .launch-box h2 { font-size: 34px; line-height: 1.15; margin: 8px 0 10px; letter-spacing: -.5px; }
 .launch-box p { margin: 0 0 16px; font-size: 17px; }
@@ -445,7 +452,9 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
   }
   function closeLaunch() {
     $("launch").hidden = true;
-    $("message").focus();
+    // preventScroll: in a narrow window, focusing the message box would otherwise scroll the page down
+    // to it and hide the alert card the person just read.
+    $("message").focus({ preventScroll: true });
   }
   $("launch-ok").onclick = closeLaunch;
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("launch").hidden) closeLaunch(); });
@@ -571,7 +580,40 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
 
   // ---- Conversation -----------------------------------------------------------------------------------
   const thread = $("thread");
-  const scrollDown = () => (thread.scrollTop = thread.scrollHeight);
+
+  // Keeping the newest message in view.
+  // followNewest is true while the thread is scrolled to (or near) the bottom. Then, when the thread
+  // changes size (the Help me now list opens or closes, the window is resized), it stays at the bottom.
+  // If the person scrolled up to reread something, it stays where they are.
+  let followNewest = true;
+  thread.addEventListener("scroll", () => {
+    followNewest = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 24;
+  });
+  // ResizeObserver calls back whenever the thread's own box changes size.
+  new ResizeObserver(() => {
+    if (followNewest) thread.scrollTop = thread.scrollHeight;
+  }).observe(thread);
+
+  /** Scrolls to the bottom (the newest message) and keeps following it. */
+  function scrollDown() {
+    followNewest = true;
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  /**
+   * Shows a new answer. If the answer and its chips fit in the thread, scroll to the bottom. If the
+   * answer is longer than the thread, show its beginning instead (people read from the top), and let
+   * the person scroll down to the rest and the chips.
+   */
+  function showAnswer(box) {
+    const fromAnswerToEnd = thread.scrollHeight - box.offsetTop;
+    if (fromAnswerToEnd <= thread.clientHeight) {
+      scrollDown();
+    } else {
+      followNewest = false;
+      thread.scrollTop = box.offsetTop - 12;
+    }
+  }
 
   /**
    * Turns an answer into paragraphs and numbered or bulleted lists, using text only (never innerHTML),
@@ -636,7 +678,7 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
       chips.append(chip);
     }
     thread.append(chips);
-    scrollDown();
+    showAnswer(box);
   }
 
   /** A short message from the app itself (offline, back online, welcome). Not sent to the model. */
@@ -690,8 +732,14 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
     const open = $("prompts").hidden;
     $("prompts").hidden = !open;
     $("help-now").setAttribute("aria-expanded", String(open));
-    if (open) $("prompts").querySelector("button")?.focus();
+    if (open) $("prompts").querySelector("button")?.focus({ preventScroll: true });
   };
+  // Escape closes the list (the launch alert's own Escape handler runs only while it is open).
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !$("launch").hidden || $("prompts").hidden) return;
+    hidePrompts();
+    $("help-now").focus({ preventScroll: true });
+  });
 
   // ---- Dictation --------------------------------------------------------------------------------------
   // Records the microphone at 16,000 samples per second (what Whisper expects), then sends the raw
