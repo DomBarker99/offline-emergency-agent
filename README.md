@@ -28,7 +28,8 @@ Requirements: Node.js 24+ (runs TypeScript directly).
 npm ci
 cp .env.example .env                       # add OPENROUTER_API_KEY to use OpenRouter
 npm run embed -- path/to/passages.jsonl    # once: builds data/library/ (downloads a ~130 MB model the first time)
-npm run chat -- --provider openrouter      # or --provider local
+npm run app                                # desktop window (Electron)
+npm run chat -- --provider openrouter      # terminal chat; or --provider local
 npm run bench -- --provider openrouter     # 50 evaluation questions
 ```
 
@@ -46,6 +47,7 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 | --- | --- |
 | `OPENROUTER_API_KEY` | `--provider openrouter` |
 | `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
+| `AGENT_PROVIDER`, `AGENT_DEVTOOLS` | Desktop app: starting model (`local`/`openrouter`), open DevTools (`1`) |
 | `CORPUS_DIR` | `npm run embed` default input, and the Python library tools |
 | `BUILD_LLM_*` | Python library tools only (see docs/KNOWLEDGE.md) |
 

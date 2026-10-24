@@ -3,7 +3,8 @@
 ## Overview
 
 ```
- npm run chat ──► src/chat.ts ──► ask() in src/agent.ts ──► one Chat Completions call
+ npm run app  ──► app/main.ts (Electron) ─┐
+ npm run chat ──► src/chat.ts ────────────┴─► ask() in src/agent.ts ──► one Chat Completions call
                                      │                        ├─ local llama-server (127.0.0.1:8080)
                                      │                        └─ OpenRouter
                                      ├─ src/search.ts   embeddings + cosine search over data/library/
@@ -12,6 +13,8 @@
 ```
 
 One process, one language. No servers of its own: the only network call is to the model.
+
+The desktop app runs `ask()` inside Electron's main process. The window (`app/index.html`, `app/renderer.js`) reaches it only through `window.agent.ask(question, history, provider)` and `window.agent.info()`, exposed by `app/preload.cjs`, with context isolation and sandbox on. The window is a stand-in for the real frontend: a replacement only needs to call those two functions.
 
 ## Per question (`ask()` in `src/agent.ts`)
 
@@ -28,6 +31,7 @@ One process, one language. No servers of its own: the only network call is to th
 ## Files
 
 ```
+app/               desktop app: main.ts (Electron main process), preload.cjs (bridge), index.html + renderer.js (window)
 src/agent.ts       ask(): everything above, plus providers, rules and the system prompt
 src/search.ts      embedding model + library search
 src/chat.ts        terminal chat (/sources, /clear, /quit)
