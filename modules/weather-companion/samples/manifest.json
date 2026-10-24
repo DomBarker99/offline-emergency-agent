@@ -1,0 +1,41 @@
+{
+  "simulation": true,
+  "durationSeconds": 300,
+  "scenarioHours": 12,
+  "stages": [
+    {
+      "second": 0,
+      "level": 1
+    },
+    {
+      "second": 100,
+      "level": 2
+    },
+    {
+      "second": 200,
+      "level": 3
+    }
+  ],
+  "samples": [
+    {
+      "file": "steady.json",
+      "seconds": 0,
+      "branch": "assisted-departure"
+    },
+    {
+      "file": "prepare.json",
+      "seconds": 100,
+      "branch": "assisted-departure"
+    },
+    {
+      "file": "event-departure.json",
+      "seconds": 225,
+      "branch": "assisted-departure"
+    },
+    {
+      "file": "event-sheltering.json",
+      "seconds": 225,
+      "branch": "shelter-assistance"
+    }
+  ]
+}

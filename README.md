@@ -55,3 +55,16 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 ## License
 
 TBD.
+
+## Weather companion demo
+
+A separate module provides simulated flood, wildfire, earthquake, power-outage and extreme-heat context, with a responsive animated companion UI.
+
+```sh
+npm run weather:install
+npm run weather:demo
+# Open http://127.0.0.1:4317/companion
+npm run weather:test
+```
+
+Demo controls include three event stages and an offline transition. This module supplies validated context and browser handoff events; it is not yet wired to the agent in `src/agent.ts`. Voice, local model activation, and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).

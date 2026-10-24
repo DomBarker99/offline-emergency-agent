@@ -1,0 +1,776 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "2.0.0"
+    },
+    "hazard": {
+      "type": "string",
+      "enum": [
+        "flood",
+        "fire",
+        "earthquake",
+        "outage",
+        "heat"
+      ]
+    },
+    "asOf": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "area": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "simulation",
+        "live",
+        "mixed",
+        "unavailable"
+      ]
+    },
+    "revision": {
+      "type": "string"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "updateIntervalSeconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "provenance",
+          "updateIntervalSeconds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "stage": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "const": 1
+                },
+                {
+                  "type": "number",
+                  "const": 2
+                },
+                {
+                  "type": "number",
+                  "const": 3
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "enum": [
+            "steady",
+            "prepare",
+            "event",
+            "unknown"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "scripted-fixture",
+            "external-assessment",
+            "unavailable"
+          ]
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "level",
+        "name",
+        "summary",
+        "basis",
+        "evidenceIds"
+      ],
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "validity": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "degraded"
+          ]
+        },
+        "freshness": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "stale",
+            "current"
+          ]
+        },
+        "geographicFit": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "local",
+              "regional",
+              "unknown"
+            ]
+          }
+        },
+        "uncertainty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "validity",
+        "freshness",
+        "geographicFit",
+        "uncertainty"
+      ],
+      "additionalProperties": false
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceId",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "latest": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "rainfall",
+              "riverLevel",
+              "windGust",
+              "temperature",
+              "humidity",
+              "pm25",
+              "fireArea",
+              "fireDistance",
+              "magnitude",
+              "shakingIntensity",
+              "customersWithoutPower",
+              "heatIndex"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidenceId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "metric",
+          "unit",
+          "value",
+          "evidenceId",
+          "validTo"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "history": {
+      "minItems": 4,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 1
+              },
+              {
+                "type": "number",
+                "const": 4
+              },
+              {
+                "type": "number",
+                "const": 8
+              },
+              {
+                "type": "number",
+                "const": 12
+              }
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metric": {
+                  "type": "string",
+                  "enum": [
+                    "rainfall",
+                    "riverLevel",
+                    "windGust",
+                    "temperature",
+                    "humidity",
+                    "pm25",
+                    "fireArea",
+                    "fireDistance",
+                    "magnitude",
+                    "shakingIntensity",
+                    "customersWithoutPower",
+                    "heatIndex"
+                  ]
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "aggregation": {
+                  "type": "string",
+                  "enum": [
+                    "sum",
+                    "latest",
+                    "max",
+                    "mean"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "coveredHours": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "coverage": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "partial",
+                    "unavailable"
+                  ]
+                },
+                "evidenceIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "metric",
+                "unit",
+                "aggregation",
+                "value",
+                "coveredHours",
+                "coverage",
+                "evidenceIds"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "hours",
+          "start",
+          "end",
+          "metrics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "forecast": {
+      "type": "object",
+      "properties": {
+        "windows": {
+          "minItems": 4,
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "hours": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "const": 1
+                  },
+                  {
+                    "type": "number",
+                    "const": 4
+                  },
+                  {
+                    "type": "number",
+                    "const": 8
+                  },
+                  {
+                    "type": "number",
+                    "const": 12
+                  }
+                ]
+              },
+              "start": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "end": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "metrics": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "metric": {
+                      "type": "string",
+                      "enum": [
+                        "rainfall",
+                        "riverLevel",
+                        "windGust",
+                        "temperature",
+                        "humidity",
+                        "pm25",
+                        "fireArea",
+                        "fireDistance",
+                        "magnitude",
+                        "shakingIntensity",
+                        "customersWithoutPower",
+                        "heatIndex"
+                      ]
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "aggregation": {
+                      "type": "string",
+                      "enum": [
+                        "sum",
+                        "latest",
+                        "max",
+                        "mean"
+                      ]
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "coveredHours": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "coverage": {
+                      "type": "string",
+                      "enum": [
+                        "complete",
+                        "partial",
+                        "unavailable"
+                      ]
+                    },
+                    "evidenceIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "metric",
+                    "unit",
+                    "aggregation",
+                    "value",
+                    "coveredHours",
+                    "coverage",
+                    "evidenceIds"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "hours",
+              "start",
+              "end",
+              "metrics"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "uncertainty": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "windows",
+        "uncertainty"
+      ],
+      "additionalProperties": false
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "areaId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "observation",
+              "forecast"
+            ]
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "rainfall",
+              "riverLevel",
+              "windGust",
+              "temperature",
+              "humidity",
+              "pm25",
+              "fireArea",
+              "fireDistance",
+              "magnitude",
+              "shakingIntensity",
+              "customersWithoutPower",
+              "heatIndex"
+            ]
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "validTo": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "quality": {
+            "type": "object",
+            "properties": {
+              "validity": {
+                "type": "string",
+                "enum": [
+                  "passed",
+                  "unavailable"
+                ]
+              },
+              "geographicFit": {
+                "type": "string",
+                "enum": [
+                  "local",
+                  "regional",
+                  "unknown"
+                ]
+              },
+              "uncertainty": {
+                "type": "string",
+                "enum": [
+                  "not-calibrated",
+                  "provider-supplied",
+                  "unknown"
+                ]
+              }
+            },
+            "required": [
+              "validity",
+              "geographicFit",
+              "uncertainty"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "sourceId",
+          "areaId",
+          "kind",
+          "metric",
+          "value",
+          "unit",
+          "validFrom",
+          "validTo",
+          "issuedAt",
+          "retrievedAt",
+          "provenance",
+          "quality"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scene": {
+      "type": "object",
+      "properties": {
+        "hazard": {
+          "type": "string",
+          "enum": [
+            "flood",
+            "fire",
+            "earthquake",
+            "outage",
+            "heat"
+          ]
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "const": 1
+                },
+                {
+                  "type": "number",
+                  "const": 2
+                },
+                {
+                  "type": "number",
+                  "const": 3
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "animationIsIllustrative": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "hazard",
+        "stage",
+        "available",
+        "animationIsIllustrative"
+      ],
+      "additionalProperties": false
+    },
+    "aiHandoff": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "assessmentSuggested": {
+          "type": "boolean"
+        },
+        "notificationAuthorized": {
+          "type": "boolean",
+          "const": false
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "focus": {
+          "type": "string"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructions": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "assessmentSuggested",
+        "notificationAuthorized",
+        "evidenceIds",
+        "focus",
+        "unknowns",
+        "instructions"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "hazard",
+    "asOf",
+    "area",
+    "mode",
+    "revision",
+    "sources",
+    "stage",
+    "quality",
+    "failures",
+    "latest",
+    "history",
+    "forecast",
+    "records",
+    "scene",
+    "aiHandoff"
+  ],
+  "additionalProperties": false
+}
