@@ -1,3 +1,4 @@
+import { retrieve } from './retrieval.ts';
 import { ChatRequest, answerChat } from './chat.ts';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -19,6 +20,11 @@ const server = createServer(async (req, res) => {
   };
   try {
     const url = new URL(req.url ?? '/', 'http://localhost');
+    if(req.method==='GET' && url.pathname==='/api/pack'){
+      const query=(url.searchParams.get('q')??'flood').slice(0,300);
+      const result=await retrieve(query);
+      return reply(200,{...result,items:result.items.map(({id,title,body,source,passageId})=>({id,title,body,source,passageId}))});
+    }
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       if (req.headers.origin && req.headers.origin !== 'http://'+req.headers.host) return reply(403,{error:'Origin not allowed'});
       if (!req.headers['content-type']?.startsWith('application/json')) return reply(415,{error:'JSON required'});

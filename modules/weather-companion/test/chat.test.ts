@@ -8,3 +8,10 @@ test('chat validates input and routes offline exclusively to local model',async(
  try{const result=await answerChat({text:'Explain flood protection',mode:'local',context:null,history:[]});assert.match(called,/127.0.0.1:8080/);assert.equal(result.provider,'local');assert.equal(result.contextFreshness,'saved');assert.ok(result.sources.length);}
  finally{globalThis.fetch=original;}
 });
+test('shipped disaster passages are retrieved without a model',async()=>{
+ const {retrieve}=await import('../src/retrieval.ts');
+ const pack=await retrieve('flood water evacuation','flood');
+ assert.equal(pack.passageCount,2140);
+ assert.ok(pack.items.some(item=>item.passageId));
+ assert.ok(pack.items.every(item=>typeof item.body==='string'&&item.source?.url));
+});

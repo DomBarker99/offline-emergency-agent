@@ -118,3 +118,8 @@ The browser now sends optional `timing`: device wall time, context receipt time,
 The most recent assistant reply stays visible above an expandable Previous messages history. Browser SpeechRecognition fills the composer for review before Send. Online recognition may use the browser vendor's service. Offline recognition requires `processLocally`; unsupported or missing language packs produce a visible error instead of a cloud fallback. Actual microphone capture must be tested on the target browser/device.
 
 Retrieval searches the shipped guidance cards and, when supplied, `data/library/passages.jsonl` using local keyword matching (top five cards plus top five passages). The passage file is not present yet. This is not semantic/vector retrieval; the root agent's embedding pipeline remains separate. The request includes retrieval method and passage count in the response for inspection.
+
+### Emergency assistance and shipped library
+Merged Dom's shipped 2,140-passage library and vector index from main. The companion currently uses local keyword retrieval, with title/heading boosts; the vector index is available for subsequent semantic retrieval integration. `GET /api/pack?q=...` exposes source-backed card and passage results without invoking a model. The UI provides Help me now, follow-up actions, and direct pack browsing. These actions do not dispatch assistance or certify safety.
+
+The optional support contact is stored only in this origin's localStorage, removable from the UI, and excluded from model prompts. The call link invokes the device's calling handler; it does not confirm contact or delivery. Pack browsing requires the local server running but no external internet. Speech/browser offline reload limitations remain as documented above.
