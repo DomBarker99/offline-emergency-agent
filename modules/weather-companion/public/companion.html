@@ -410,11 +410,15 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
     if (kind === "back") bannerTimer = setTimeout(() => (b.hidden = true), 6000);
   }
 
+  // Friendly names for the local models (AGENT_LOCAL_MODEL); anything else is shown as its name.
+  const LOCAL_NAMES = { "gemma4-26b-a4b": "Gemma", "granite4.2-8b": "Granite" };
+  const localName = () => LOCAL_NAMES[setup?.localModel] || setup?.localModel || "local model";
+
   /** The model badge in the assistant's header. */
   function showModel() {
     const local = offline || setup?.provider === "local";
     $("model-badge").classList.toggle("local", local);
-    $("model-badge").textContent = local ? "On this laptop" : "Online model";
+    $("model-badge").textContent = local ? `On this laptop · ${localName()}` : "Online model";
     $("hint").textContent = offline
       ? "Offline: answers come from this laptop."
       : setup?.provider === "local"
@@ -598,8 +602,8 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
       });
       typing.remove();
       const meta = result.fallback
-        ? "Answered on this laptop: the online model couldn't be reached."
-        : result.provider === "local" ? "Answered on this laptop." : "Answered by the online model.";
+        ? `Answered on this laptop (${localName()}): the online model couldn't be reached.`
+        : result.provider === "local" ? `Answered on this laptop (${localName()}).` : "Answered by the online model.";
       addAnswer(result.answer, meta);
       history.push({ role: "user", content: text }, { role: "assistant", content: result.answer });
     } catch (error) {
