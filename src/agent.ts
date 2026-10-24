@@ -106,10 +106,16 @@ export function searchText(question: string, history: Turn[]): string {
   return followUp ? `${previous.text} ${question}` : question;
 }
 
+/** IDs the answer cites: "[L1]", "[C1, L4]" and full-width brackets "【L2】" all count. */
+export function citedIds(answer: string): string[] {
+  const brackets = answer.replace(/\u3010/g, "[").replace(/\u3011/g, "]").matchAll(/\[([A-Z]+\d+(?:\s*,\s*[A-Z]+\d+)*)\]/g);
+  return [...new Set([...brackets].flatMap((m) => m[1].split(/\s*,\s*/)))];
+}
+
 /** Step 6: problems in the answer, judged only against what the model was shown. Empty = fine. */
 function checkAnswer(answer: string, shownIds: string[], shownText: string): string[] {
   const flags: string[] = [];
-  const cited = [...answer.replace(/\u3010/g, "[").replace(/\u3011/g, "]").matchAll(/\[([A-Z]+\d+)\]/g)].map((m) => m[1]);
+  const cited = citedIds(answer);
   if (cited.length === 0 && !/not in your emergency pack/i.test(answer)) flags.push("no-citation");
   for (const id of new Set(cited)) if (!shownIds.includes(id)) flags.push(`unknown-citation:${id}`);
   for (const m of answer.matchAll(/(\+?\d[\d\s().-]{6,}\d)|\b(911|112|999)\b/g)) {

@@ -9,7 +9,7 @@
  * can't answer, did the right danger rule fire, any flags, time. Results: logs/bench/<time>.json
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { ask, searchText, type ProviderName, type Turn } from "./agent.ts";
+import { ask, citedIds, searchText, type ProviderName, type Turn } from "./agent.ts";
 import { loadLibrary } from "./search.ts";
 
 interface Question {
@@ -57,7 +57,7 @@ interface Row {
 const rows: Row[] = [];
 for (const q of questions) {
   const t = await ask(q.question, q.history ?? [], provider, flag("--model"));
-  const cited = new Set([...t.answer.matchAll(/\[([A-Z]+\d+)\]/g)].map((m) => m[1]));
+  const cited = new Set(citedIds(t.answer));
   const row: Row = {
     id: q.id,
     type: q.type,
