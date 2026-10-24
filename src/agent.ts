@@ -26,7 +26,11 @@ setTracingDisabled(true);
 export const PROVIDERS = {
   local: {
     baseURL: process.env.LOCAL_BASE_URL ?? "http://127.0.0.1:8080/v1", // llama-server from start.sh
-    model: "gemma4-26b-a4b", // name from playground/models.ini
+    // AGENT_LOCAL_MODEL picks which model the local server runs (a name from the server's preset,
+    // e.g. gemma4-26b-a4b or granite4.2-8b). Read when used, so .env loaded by the app counts.
+    get model() {
+      return process.env.AGENT_LOCAL_MODEL || "gemma4-26b-a4b";
+    },
     apiKey: "not-needed",
     extra: {},
   },

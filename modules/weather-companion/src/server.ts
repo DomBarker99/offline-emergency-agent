@@ -174,5 +174,5 @@ const port = Number(process.env.PORT ?? 4317);
 server.listen(port, "127.0.0.1", () => {
   const address = server.address();
   const actual = typeof address === "object" && address ? address.port : port;
-  console.log(`Companion server: http://127.0.0.1:${actual}/companion (scenario ${scenario}, online model ${provider})`);
+  console.log(`Companion server: http://127.0.0.1:${actual}/companion (scenario ${scenario}, online model ${provider}, local model ${setupFor(scenario, provider).localModel})`);
 });

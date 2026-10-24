@@ -10,6 +10,7 @@
  */
 import { readFileSync } from "node:fs";
 import { PROFILE } from "../../../src/profile.ts";
+import { PROVIDERS } from "../../../src/agent.ts";
 import type { Hazard } from "./event-pipeline.ts";
 
 /** One quoted sentence of an action card, with where it comes from. */
@@ -108,6 +109,7 @@ export function setupFor(scenario: Hazard, provider: "local" | "openrouter") {
   return {
     scenario,
     provider,
+    localModel: PROVIDERS.local.model, // AGENT_LOCAL_MODEL, shown on the model badge
     alertName: NAMES[scenario].alert,
     contact: { name: contact.name, relation: contact.relation, city: contact.city, phone: contact.phone },
     card: cardFor(scenario),

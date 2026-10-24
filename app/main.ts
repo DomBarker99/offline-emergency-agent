@@ -13,6 +13,7 @@
  * Settings, read from .env at startup (a value set in the shell wins over .env):
  *   AGENT_PROVIDER  openrouter | local      model used while online (offline always uses the local model)
  *   AGENT_SCENARIO  flood | fire | earthquake | outage | heat     the active emergency the app opens on
+ *   AGENT_LOCAL_MODEL  gemma4-26b-a4b (default) | granite4.2-8b   the model the local server runs
  *   AGENT_DEVTOOLS=1                        open Chromium DevTools next to the window
  * Presenter key: Ctrl+Shift+O in the window switches "simulate offline" on and off (handled by the page).
  */

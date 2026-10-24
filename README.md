@@ -45,7 +45,7 @@ The emergency data is simulated (the screen says so); the connection check is re
 
 ### Local model
 
-`--provider local` expects an OpenAI-compatible server at `http://127.0.0.1:8080/v1` serving a model named `gemma4-26b-a4b` (change with `LOCAL_BASE_URL` and `--model`). [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` works well; `config/llama-server.example.ini` is a preset:
+`--provider local` expects an OpenAI-compatible server at `http://127.0.0.1:8080/v1` serving a model named `gemma4-26b-a4b` (change with `LOCAL_BASE_URL`, `AGENT_LOCAL_MODEL` or `--model`). [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` works well; `config/llama-server.example.ini` is a preset:
 
 ```sh
 llama-server --models-preset config/llama-server.example.ini --models-max 1
@@ -56,6 +56,7 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 | Variable | Used for |
 | --- | --- |
 | `AGENT_PROVIDER` | `local` (default) or `openrouter`: the model the app uses while online, and the chat's default. Offline is always local. |
+| `AGENT_LOCAL_MODEL` | The local model by its server name: `gemma4-26b-a4b` (default) or `granite4.2-8b` (any name your server's preset defines) |
 | `AGENT_SCENARIO` | The emergency the app opens on: `flood` (default), `fire`, `earthquake`, `outage`, `heat` |
 | `OPENROUTER_API_KEY` | `openrouter` |
 | `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
