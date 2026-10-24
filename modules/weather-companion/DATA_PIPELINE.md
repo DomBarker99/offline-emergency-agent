@@ -111,3 +111,10 @@ flowchart TD
   L --> B
   B -->|answer, sources, provider| U
 ```
+
+### Time, dictation, and retrieval
+The browser now sends optional `timing`: device wall time, context receipt time, monotonic context age, session elapsed seconds, and offline elapsed seconds. Elapsed time uses `performance.now()` without network calls; it is session-only and is not a trusted clock or guaranteed to include system sleep. Scenario `asOf` remains separate from real device time.
+
+The most recent assistant reply stays visible above an expandable Previous messages history. Browser SpeechRecognition fills the composer for review before Send. Online recognition may use the browser vendor's service. Offline recognition requires `processLocally`; unsupported or missing language packs produce a visible error instead of a cloud fallback. Actual microphone capture must be tested on the target browser/device.
+
+Retrieval searches the shipped guidance cards and, when supplied, `data/library/passages.jsonl` using local keyword matching (top five cards plus top five passages). The passage file is not present yet. This is not semantic/vector retrieval; the root agent's embedding pipeline remains separate. The request includes retrieval method and passage count in the response for inspection.

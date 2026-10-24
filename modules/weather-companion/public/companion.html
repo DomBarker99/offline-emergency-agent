@@ -23,17 +23,19 @@
  main{align-content:start;padding-top:20px}.assistant-panel{min-height:480px;max-height:none;padding:22px}.voice{margin-bottom:16px}.mic{width:76px;height:76px}#messages{max-height:160px}
 }
 @media(min-width:600px) and (max-width:899px){main{max-width:680px;padding:24px 32px}.weather-panel iframe{max-width:545px;height:auto;margin-inline:auto}.voice{margin:18px 0}}
-.connection{grid-column:1/-1;border:1px solid #d6dfd4;background:#edf2e9;border-radius:16px;padding:16px 20px;margin-bottom:16px}.connection strong{display:block}.connection p{margin:4px 0 0;font-size:14px}.connection[hidden]{display:none}</style></head><body><main><div class="connection" id="connection" role="status" aria-live="polite" hidden><strong id="connection-title"></strong><p id="connection-copy"></p></div>
+.connection{grid-column:1/-1;border:1px solid #d6dfd4;background:#edf2e9;border-radius:16px;padding:16px 20px;margin-bottom:16px}.connection strong{display:block}.connection p{margin:4px 0 0;font-size:14px}.connection[hidden]{display:none}#latest-reply{max-height:220px;overflow:auto;white-space:pre-wrap}#latest-reply:empty{display:none}#previous{background:transparent;padding:0;margin:10px 0}#previous summary{padding:8px 0}#messages{max-height:230px;flex:none}.assistant-panel{align-self:start}.mic:not(:disabled){cursor:pointer}.mic[aria-pressed="true"]{background:#b38b61}.local-time{text-align:center;font-size:12px;color:#65716c;margin:5px 0 12px}@media(min-width:900px){.assistant-panel{position:sticky;top:20px}}@media(max-width:899px){.voice{margin:8px 0}.mic{width:60px;height:60px}.voice p{margin:0}.chat{padding-top:10px}.condition{margin-bottom:8px}}
+</style></head><body><main><div class="connection" id="connection" role="status" aria-live="polite" hidden><strong id="connection-title"></strong><p id="connection-copy"></p></div>
 <section class="weather-panel" aria-label="Local conditions"><div class="time" id="time">12:00 AM PST</div><div class="cycle" aria-label="Simulated day and night"><span aria-hidden="true">☾</span><div class="track"><span class="marker" id="marker"></span></div><span aria-hidden="true">☀</span></div>
-<iframe id="scene" src="/animation-studio?embed=external" title="Animated view of simulated local conditions"></iframe>
+<p id="local-time" class="local-time"></p><iframe id="scene" src="/animation-studio?embed=external" title="Animated view of simulated local conditions"></iframe>
 <div class="condition"><h1><span class="dot" id="dot"></span><span id="condition">Connecting…</span></h1><p id="subtext">Reading the scenario context.</p></div><p id="error" role="alert" hidden></p>
-</section><section class="assistant-panel" aria-label="Talk with your assistant"><div class="voice"><button class="mic" disabled aria-label="Voice input not connected"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="17" y="5" width="14" height="26" rx="7" fill="currentColor"/><path d="M11 24v2a13 13 0 0026 0v-2M24 39v7" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button><p>Talk to your assistant</p><span class="muted">Voice connection pending</span></div>
-<section class="chat" aria-label="Assistant conversation"><h2>Your assistant</h2><div class="bubble"><small id="summary-label">DEMO SUMMARY · FROM SCENARIO DATA</small><span id="summary">Waiting for the latest readings.</span></div><div id="messages" aria-live="polite"></div><form id="chat-form"><input id="message" aria-label="Message to your assistant" placeholder="Type a message…" maxlength="2000" required><button aria-label="Send message to connected harness" type="submit">↑</button></form><div id="message-status" role="status">Connected chat uses OpenRouter. Offline mode uses the local model.</div></section>
+</section><section class="assistant-panel" aria-label="Talk with your assistant"><div class="voice"><button id="mic" class="mic" disabled aria-label="Start dictation" aria-pressed="false"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="17" y="5" width="14" height="26" rx="7" fill="currentColor"/><path d="M11 24v2a13 13 0 0026 0v-2M24 39v7" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button><p>Talk to your assistant</p><span class="muted" id="speech-status" role="status">Checking speech support…</span></div>
+<section class="chat" aria-label="Assistant conversation"><h2>Your assistant</h2><div class="bubble"><small id="summary-label">DEMO SUMMARY · FROM SCENARIO DATA</small><span id="summary">Waiting for the latest readings.</span></div><div id="latest-reply" class="bubble" aria-live="polite"></div><details id="previous"><summary>Previous messages</summary><div id="messages"></div></details><form id="chat-form"><input id="message" aria-label="Message to your assistant" placeholder="Type a message…" maxlength="2000" required><button aria-label="Send message to connected harness" type="submit">↑</button></form><div id="message-status" role="status">Connected chat uses OpenRouter. Offline mode uses the local model.</div></section>
 </section><details id="demo"><summary>Demo controls</summary><label>Scenario<select id="hazard"><option value="flood">Rain & flood</option><option value="fire">Wildfire</option><option value="earthquake">Earthquake</option><option value="outage">Power outage</option><option value="heat">Extreme heat</option></select></label><div class="controls"><button id="play">Pause</button><button id="restart">Restart</button><button id="offline-toggle" aria-pressed="false">Simulate offline</button><button data-stage="0">1 · Steady</button><button data-stage="100">2 · Prepare</button><button data-stage="200">3 · Event</button></div><label>Playback speed<select id="speed"><option value="1">1× · five-minute scenario</option><option value="5" selected>5× · one-minute walkthrough</option></select></label><p class="muted" id="data-status">Connecting</p><details><summary>Harness context</summary><pre id="packet"></pre></details><p class="muted"><a href="/animation-studio">Animation studio</a> · <a href="/">Detailed flood dashboard</a></p></details><footer>Simulated conditions · No real alerts or dispatched assistance</footer>
 </main><script>
 (()=>{
  const $=id=>document.getElementById(id);
  let seconds=0,running=true,speed=5,hazard='flood',lastTick=performance.now(),packet=null,requestId=0,controller=null,ready=false,replay=0;
+ const sessionStart=performance.now();let offlineStart=null,receivedMono=null;
  let simulatedOffline=false,offline=false,localReady=false,lastReceived=null;
  const mode=()=>({mode:offline?'local':'connected',reason:simulatedOffline?'demo':offline?'browser-offline':'connected',context:packet,contextFreshness:offline?'saved':'current',receivedAt:lastReceived,localReady});
  function updateConnection(){
@@ -45,7 +47,7 @@
  }
  function changeConnection(){
    const next=simulatedOffline||!navigator.onLine;if(next===offline)return;
-   offline=next;lastTick=performance.now();
+   offline=next;offlineStart=offline?performance.now():null;stopSpeech();lastTick=performance.now();
    if(offline){++requestId;controller?.abort();controller=null;sendScene();}
    for(const el of document.querySelectorAll('#play,#restart,#hazard,#speed,[data-stage]'))el.disabled=offline;
    updateConnection();window.dispatchEvent(new CustomEvent('assistant:mode',{detail:mode()}));
@@ -58,7 +60,7 @@
  $('scene').addEventListener('load',()=>{ready=true;sendScene()});
  function clock(){const minutes=Math.floor(seconds/300*720),h=Math.floor(minutes/60);$('time').textContent=(h%12||12)+':'+String(minutes%60).padStart(2,'0')+(h>=12?' PM':' AM')+' PST';$('marker').style.left=Math.min(98,seconds/300*100)+'%';}
  function render(c){
-   packet=c;lastReceived=new Date().toISOString();const level=c.stage.level;
+   packet=c;receivedMono=performance.now();lastReceived=new Date().toISOString();const level=c.stage.level;
    $('condition').textContent=titles[c.hazard][level-1];$('dot').style.background=['#83b291','#c5a567','#bf8d77'][level-1];
    $('subtext').textContent=['Routine monitoring continues.','Conditions need attention.','An event is confirmed in this simulation.'][level-1];
    const keys={flood:['rainfall','riverLevel'],fire:['pm25','windGust'],earthquake:['magnitude','shakingIntensity'],outage:['customersWithoutPower','temperature'],heat:['temperature','heatIndex']}[c.hazard];
@@ -85,7 +87,7 @@
  $('speed').onchange=e=>{speed=Number(e.target.value);lastTick=performance.now()};
  document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>jump(Number(b.dataset.stage)));
  let messageNumber=0;
- const append=(text,user=false)=>{const el=document.createElement('div');el.className='bubble'+(user?' user':'');el.textContent=text;$('messages').append(el);el.scrollIntoView({block:'nearest'})};
+ const append=(text,user=false)=>{const el=document.createElement('div');el.className='bubble'+(user?' user':'');el.textContent=text;$('messages').append(el);if(!user)$('latest-reply').textContent=text};
  window.emergencyHarness={getContext:()=>packet,getMode:mode,setLocalReady(value){if(typeof value!=='boolean')throw Error('Expected boolean');localReady=value;updateConnection();},receiveReply(text){if(typeof text!=='string'||!text.trim()||text.length>10000)throw Error('Invalid reply');append(text);$('message-status').textContent='Reply received from the connected harness.';}};
  const history=[];let chatBusy=false;
  $('chat-form').onsubmit=async e=>{
@@ -95,7 +97,7 @@
    $('message-status').textContent=requestMode==='local'?'Asking the model on this computer…':'Asking Gemma through OpenRouter…';
    window.dispatchEvent(new CustomEvent('assistant:message',{detail:{id:'message-'+(++messageNumber),text,context:packet,assistance:mode()}}));
    try{
-     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({text,mode:requestMode,context:packet,history:history.slice(-12)})});
+     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({text,mode:requestMode,context:packet,timing:timing(),history:history.slice(-12)})});
      const result=await response.json();if(!response.ok)throw Error(result.error||'Assistance unavailable');
      if(requestMode!==(offline?'local':'connected')){ $('message-status').textContent='Connection mode changed. Please send your message again.';return; }
      append(result.answer);history.push({role:'user',content:text},{role:'assistant',content:result.answer});
@@ -105,7 +107,27 @@
    finally{chatBusy=false;button.disabled=false;}
  };
 
- setInterval(()=>{const now=performance.now();if(running&&!offline&&!document.hidden)seconds=Math.min(300,seconds+(now-lastTick)/1000*speed);lastTick=now;clock();if(seconds===300){running=false;$('play').textContent='Play';sendScene()}if(!controller&&!document.hidden)refresh();},1000);
+
+ function timing(){return {deviceNow:new Date().toISOString(),contextReceivedAt:lastReceived,contextAgeSeconds:receivedMono===null?null:Math.max(0,(performance.now()-receivedMono)/1000),offlineElapsedSeconds:offlineStart===null?0:Math.max(0,(performance.now()-offlineStart)/1000),sessionElapsedSeconds:(performance.now()-sessionStart)/1000,source:'device-monotonic'};}
+ let recognition=null;
+ function stopSpeech(){recognition?.abort();recognition=null;$('mic').setAttribute('aria-pressed','false');}
+ const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(Speech){$('mic').disabled=false;$('speech-status').textContent='Dictate, review, then send. Browser speech may use an online service.';}
+ else $('speech-status').textContent='Speech input is unavailable in this browser. You can type below.';
+ $('mic').onclick=()=>{
+   if(recognition){stopSpeech();$('speech-status').textContent='Dictation stopped.';return;}
+   const r=new Speech();
+   if(offline&&!('processLocally' in r)){$('speech-status').textContent='This browser cannot dictate offline. Please type your message.';return;}
+   if(offline)r.processLocally=true;
+   r.lang='en-US';r.interimResults=false;r.continuous=false;recognition=r;
+   const prior=$('message').value;
+   r.onresult=e=>{if(recognition!==r)return;$('message').value=(prior+' '+e.results[0][0].transcript).trim().slice(0,2000);$('speech-status').textContent='Review your message, then press Send.';};
+   r.onerror=e=>{$('speech-status').textContent=e.error==='not-allowed'?'Microphone permission was denied. You can type instead.':'Dictation unavailable ('+e.error+'). You can type instead.';};
+   r.onend=()=>{if(recognition===r){recognition=null;$('mic').setAttribute('aria-pressed','false');}};
+   try{r.start();$('mic').setAttribute('aria-pressed','true');$('speech-status').textContent='Listening… Tap the microphone to stop.';}catch{stopSpeech();$('speech-status').textContent='Could not start dictation. Please type instead.';}
+ };
+ window.addEventListener('pagehide',stopSpeech);
+ setInterval(()=>{const now=performance.now();const t=timing();$('local-time').textContent=offline?'Offline for '+Math.floor(t.offlineElapsedSeconds/60)+'m '+Math.floor(t.offlineElapsedSeconds%60)+'s · last update '+(t.contextAgeSeconds===null?'unavailable':Math.floor(t.contextAgeSeconds)+'s ago'):'Device time · '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});if(running&&!offline&&!document.hidden)seconds=Math.min(300,seconds+(now-lastTick)/1000*speed);lastTick=now;clock();if(seconds===300){running=false;$('play').textContent='Play';sendScene()}if(!controller&&!document.hidden)refresh();},1000);
  clock();changeConnection();refresh();
 })();
 </script></body></html>
