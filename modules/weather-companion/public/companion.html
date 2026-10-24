@@ -1,0 +1,133 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your local companion</title><style>
+*{box-sizing:border-box}body{margin:0;background:#faf9f5;color:#303d41;font:17px/1.5 system-ui,-apple-system,sans-serif}main{max-width:620px;margin:auto;padding:20px 20px 40px}.time{text-align:center;font-size:15px;font-variant-numeric:tabular-nums}.cycle{display:flex;gap:12px;align-items:center;margin:10px 15px 22px;color:#869497}.track{height:7px;flex:1;border-radius:10px;background:linear-gradient(90deg,#65728c,#d8bc99,#f6daa0);position:relative}.marker{position:absolute;top:-4px;width:15px;height:15px;border-radius:100%;background:#f1ca80;border:2px solid #fff;left:0;transition:left 1s linear}iframe{width:100%;aspect-ratio:1412/1114;display:block;border:0;background:transparent}.condition{text-align:center;margin:12px 0 18px}h1{font-size:clamp(25px,4.5vw,37px);line-height:1.18;letter-spacing:-1px;margin:10px 0}.dot{width:11px;height:11px;display:inline-block;border-radius:50%;background:#83b291;margin-right:10px}#subtext{font-size:14px;color:#6e787b;margin:9px 0}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #c5a25e;outline-offset:3px}.voice{text-align:center;margin:20px 0 26px}.mic{width:88px;height:88px;border-radius:50%;background:#87aa91;color:white;border:8px solid #edf0e5;cursor:default}.mic svg{width:38px;height:38px}.voice p{margin:6px 0 0;font-size:16px}.muted{color:#7d8585;font-size:12px}.chat{border-top:1px solid #e3e4da;padding-top:18px}h2{font-weight:500;font-size:16px;color:#717b7d;margin:0 0 14px}.bubble{background:#eef0e5;border-radius:20px 20px 20px 5px;padding:15px 18px;margin:0 0 12px;font-size:16px}.bubble small{display:block;font-size:11px;color:#707b73;margin-bottom:7px}.user{background:#e2ede6;margin-left:35px;border-radius:20px 20px 5px 20px}#messages{max-height:280px;overflow:auto}form{display:flex;gap:8px;padding:6px;border:1px solid #dcdfd5;border-radius:30px;background:white;margin-top:15px}input{min-width:0;flex:1;padding:8px 13px;border:0;background:transparent;font-size:16px}form button{width:44px;height:44px;border:0;border-radius:50%;background:#83a88f;color:white;font-size:24px}details{margin-top:24px;border-radius:15px;background:#f0efe8;padding:14px 17px}summary{cursor:pointer;font-size:14px}.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.controls button,select{border:1px solid #d8ddd4;background:white;border-radius:9px;padding:9px 12px;min-height:44px;font-size:13px}label{display:block;margin-top:14px;font-size:12px;color:#65716c}select{width:100%;margin-top:5px}pre{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto}a{color:#526e61}footer{text-align:center;font-size:11px;color:#7a8580;margin-top:18px}#error{background:#fff0d7;padding:12px;border-radius:12px;font-size:14px}#message-status{font-size:12px;color:#707a73;margin-top:9px}button:disabled{cursor:default}#data-status{font-variant-numeric:tabular-nums}@media(max-width:400px){main{padding:15px 12px 28px}.cycle{margin-bottom:12px}.condition{margin-top:5px}.voice{margin:15px 0 20px}.mic{width:78px;height:78px}.bubble{font-size:15px}}
+
+/* Mobile keeps the original reading order. Desktop gives each activity a column. */
+.weather-panel,.assistant-panel{min-width:0}
+@media(min-width:900px){
+ main{max-width:1320px;min-height:100svh;padding:36px clamp(24px,4vw,64px) 24px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(330px,.85fr);gap:20px 48px;align-content:center;align-items:start}
+ .weather-panel{align-self:center}
+ .weather-panel iframe{width:min(100%,73.5vh);height:auto;margin-inline:auto}
+ .time{font-size:16px}.cycle{margin:10px 22px 18px}
+ .condition{margin:18px 0 0}.condition h1{font-size:clamp(28px,3vw,42px)}
+ .assistant-panel{background:#fffefa;border:1px solid #e4e6dc;border-radius:28px;padding:28px;display:flex;flex-direction:column;min-height:570px}
+ .voice{margin:0 0 24px}.mic{width:100px;height:100px}.voice p{font-size:18px}
+ .chat{flex:1;display:flex;flex-direction:column;min-height:0}.chat h2{font-size:18px}
+ #messages{flex:1;min-height:50px;max-height:230px;overflow:auto}
+ .chat form{flex-shrink:0;margin-top:18px}.bubble{font-size:16px}
+ #demo{grid-column:1/-1;margin:0;background:transparent;border-top:1px solid #e0e3d9;border-radius:0;padding:16px 0 0}
+ #demo[open]{display:grid;grid-template-columns:1fr 1fr;column-gap:24px}
+ #demo>summary,#demo>.muted,#demo>details{grid-column:1/-1}
+ #demo .controls{align-content:end}footer{grid-column:1/-1;margin:0}
+}
+@media(min-width:900px) and (max-height:760px){
+ main{align-content:start;padding-top:20px}.assistant-panel{min-height:480px;max-height:none;padding:22px}.voice{margin-bottom:16px}.mic{width:76px;height:76px}#messages{max-height:160px}
+}
+@media(min-width:600px) and (max-width:899px){main{max-width:680px;padding:24px 32px}.weather-panel iframe{max-width:545px;height:auto;margin-inline:auto}.voice{margin:18px 0}}
+.connection{grid-column:1/-1;border:1px solid #d6dfd4;background:#edf2e9;border-radius:16px;padding:16px 20px;margin-bottom:16px}.connection strong{display:block}.connection p{margin:4px 0 0;font-size:14px}.connection[hidden]{display:none}#latest-reply{max-height:220px;overflow:auto;white-space:pre-wrap}#latest-reply:empty{display:none}#previous{background:transparent;padding:0;margin:10px 0}#previous summary{padding:8px 0}#messages{max-height:230px;flex:none}.assistant-panel{align-self:start}.mic:not(:disabled){cursor:pointer}.mic[aria-pressed="true"]{background:#b38b61}.local-time{text-align:center;font-size:12px;color:#65716c;margin:5px 0 12px}@media(min-width:900px){.assistant-panel{position:sticky;top:20px}}@media(max-width:899px){.voice{margin:8px 0}.mic{width:60px;height:60px}.voice p{margin:0}.chat{padding-top:10px}.condition{margin-bottom:8px}}
+</style></head><body><main><div class="connection" id="connection" role="status" aria-live="polite" hidden><strong id="connection-title"></strong><p id="connection-copy"></p></div>
+<section class="weather-panel" aria-label="Local conditions"><div class="time" id="time">12:00 AM PST</div><div class="cycle" aria-label="Simulated day and night"><span aria-hidden="true">☾</span><div class="track"><span class="marker" id="marker"></span></div><span aria-hidden="true">☀</span></div>
+<p id="local-time" class="local-time"></p><iframe id="scene" src="/animation-studio?embed=external" title="Animated view of simulated local conditions"></iframe>
+<div class="condition"><h1><span class="dot" id="dot"></span><span id="condition">Connecting…</span></h1><p id="subtext">Reading the scenario context.</p></div><p id="error" role="alert" hidden></p>
+</section><section class="assistant-panel" aria-label="Talk with your assistant"><div class="voice"><button id="mic" class="mic" disabled aria-label="Start dictation" aria-pressed="false"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="17" y="5" width="14" height="26" rx="7" fill="currentColor"/><path d="M11 24v2a13 13 0 0026 0v-2M24 39v7" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button><p>Talk to your assistant</p><span class="muted" id="speech-status" role="status">Checking speech support…</span></div>
+<section class="chat" aria-label="Assistant conversation"><h2>Your assistant</h2><div class="bubble"><small id="summary-label">DEMO SUMMARY · FROM SCENARIO DATA</small><span id="summary">Waiting for the latest readings.</span></div><div id="latest-reply" class="bubble" aria-live="polite"></div><details id="previous"><summary>Previous messages</summary><div id="messages"></div></details><form id="chat-form"><input id="message" aria-label="Message to your assistant" placeholder="Type a message…" maxlength="2000" required><button aria-label="Send message to connected harness" type="submit">↑</button></form><div id="message-status" role="status">Connected chat uses OpenRouter. Offline mode uses the local model.</div></section>
+</section><details id="demo"><summary>Demo controls</summary><label>Scenario<select id="hazard"><option value="flood">Rain & flood</option><option value="fire">Wildfire</option><option value="earthquake">Earthquake</option><option value="outage">Power outage</option><option value="heat">Extreme heat</option></select></label><div class="controls"><button id="play">Pause</button><button id="restart">Restart</button><button id="offline-toggle" aria-pressed="false">Simulate offline</button><button data-stage="0">1 · Steady</button><button data-stage="100">2 · Prepare</button><button data-stage="200">3 · Event</button></div><label>Playback speed<select id="speed"><option value="1">1× · five-minute scenario</option><option value="5" selected>5× · one-minute walkthrough</option></select></label><p class="muted" id="data-status">Connecting</p><details><summary>Harness context</summary><pre id="packet"></pre></details><p class="muted"><a href="/animation-studio">Animation studio</a> · <a href="/">Detailed flood dashboard</a></p></details><footer>Simulated conditions · No real alerts or dispatched assistance</footer>
+</main><script>
+(()=>{
+ const $=id=>document.getElementById(id);
+ let seconds=0,running=true,speed=5,hazard='flood',lastTick=performance.now(),packet=null,requestId=0,controller=null,ready=false,replay=0;
+ const sessionStart=performance.now();let offlineStart=null,receivedMono=null;
+ let simulatedOffline=false,offline=false,localReady=false,lastReceived=null;
+ const mode=()=>({mode:offline?'local':'connected',reason:simulatedOffline?'demo':offline?'browser-offline':'connected',context:packet,contextFreshness:offline?'saved':'current',receivedAt:lastReceived,localReady});
+ function updateConnection(){
+   $('connection').hidden=!offline;
+   $('summary-label').textContent=offline?'SAVED SUMMARY · NOT CURRENT':'DEMO SUMMARY · FROM SCENARIO DATA';
+   $('connection-title').textContent=simulatedOffline?'Offline demo · Local assistance':'You’re offline · Local assistance';
+   $('connection-copy').textContent=localReady?'Local assistance is ready. Weather updates are paused; the scene shows the last received conditions.':'Switching to local assistance. Waiting for the local AI connection. Weather updates are paused.';
+   if(offline){$('subtext').textContent=packet?'Saved conditions · not a current reading':'No saved weather context available';$('data-status').textContent=lastReceived?'Last received: '+lastReceived+' · saved context':'No saved context';}
+ }
+ function changeConnection(){
+   const next=simulatedOffline||!navigator.onLine;if(next===offline)return;
+   offline=next;offlineStart=offline?performance.now():null;stopSpeech();lastTick=performance.now();
+   if(offline){++requestId;controller?.abort();controller=null;sendScene();}
+   for(const el of document.querySelectorAll('#play,#restart,#hazard,#speed,[data-stage]'))el.disabled=offline;
+   updateConnection();window.dispatchEvent(new CustomEvent('assistant:mode',{detail:mode()}));
+   if(!offline)refresh();
+ }
+ $('offline-toggle').onclick=()=>{simulatedOffline=!simulatedOffline;$('offline-toggle').textContent=simulatedOffline?'Restore connection':'Simulate offline';$('offline-toggle').setAttribute('aria-pressed',String(simulatedOffline));changeConnection();};
+ window.addEventListener('offline',changeConnection);window.addEventListener('online',changeConnection);
+ const titles={flood:['Steady conditions','Begin preparing','Flooding is occurring'],fire:['A clear afternoon','Fire risk is elevated','A wildfire is active'],earthquake:['A still moment','Earthquake readiness','An earthquake was detected'],outage:['The lights are on','Prepare for an outage','The power is out'],heat:['Comfortable conditions','Heat is building','Extreme heat is occurring']};
+ function sendScene(){if(ready&&packet)$('scene').contentWindow.postMessage({type:'weather-context',packet,running:running&&!offline,hours:seconds/25,replay},location.origin);}
+ $('scene').addEventListener('load',()=>{ready=true;sendScene()});
+ function clock(){const minutes=Math.floor(seconds/300*720),h=Math.floor(minutes/60);$('time').textContent=(h%12||12)+':'+String(minutes%60).padStart(2,'0')+(h>=12?' PM':' AM')+' PST';$('marker').style.left=Math.min(98,seconds/300*100)+'%';}
+ function render(c){
+   packet=c;receivedMono=performance.now();lastReceived=new Date().toISOString();const level=c.stage.level;
+   $('condition').textContent=titles[c.hazard][level-1];$('dot').style.background=['#83b291','#c5a567','#bf8d77'][level-1];
+   $('subtext').textContent=['Routine monitoring continues.','Conditions need attention.','An event is confirmed in this simulation.'][level-1];
+   const keys={flood:['rainfall','riverLevel'],fire:['pm25','windGust'],earthquake:['magnitude','shakingIntensity'],outage:['customersWithoutPower','temperature'],heat:['temperature','heatIndex']}[c.hazard];
+   const labels={rainfall:'Rain in the last hour',riverLevel:'River level',pm25:'Fine-particle pollution',windGust:'Wind gust',magnitude:'Detected magnitude',shakingIntensity:'Shaking intensity',customersWithoutPower:'Customers without power',temperature:'Temperature',heatIndex:'Heat index'};
+   const readings=keys.map(k=>{const m=c.latest.find(x=>x.metric===k);return m?.value!==null&&m?.value!==undefined?labels[k]+': '+m.value+' '+m.unit+'.':labels[k]+': not available.'});
+   $('summary').textContent=c.stage.summary+'. '+readings.join(' ');
+   $('packet').textContent=JSON.stringify(c,null,2);$('data-status').textContent='Simulation · '+c.records.length+' evidence records · '+c.asOf;
+   $('error').hidden=true;$('scene').style.visibility='visible';sendScene();
+   window.dispatchEvent(new CustomEvent('weather:context',{detail:c}));
+ }
+ async function refresh(){
+   if(offline)return;
+   const id=++requestId;controller?.abort();const abort=new AbortController();controller=abort;
+   const timeout=setTimeout(()=>abort.abort(),5000);
+   try{const response=await fetch('/v2/context?hazard='+hazard+'&seconds='+seconds,{signal:abort.signal,cache:'no-store'});if(!response.ok)throw Error('Context unavailable');const c=await response.json();if(id!==requestId)return;
+     if(c.schemaVersion!=='2.0.0'||c.hazard!==hazard||![1,2,3].includes(c.stage?.level)||!c.scene?.available)throw Error('Assessment unavailable');render(c);
+   }catch(e){if(id!==requestId)return;packet=null;$('condition').textContent='Conditions unavailable';$('subtext').textContent='Waiting for validated data.';$('dot').style.background='#8a9291';$('summary').textContent='Current readings could not be confirmed.';$('scene').style.visibility='hidden';$('error').hidden=false;$('error').textContent='The data feed is unavailable. Previous readings are not current.';}
+   finally{clearTimeout(timeout);if(id===requestId)controller=null;}
+ }
+ function jump(value){seconds=value;lastTick=performance.now();replay++;clock();refresh();}
+ $('play').onclick=()=>{running=!running;lastTick=performance.now();$('play').textContent=running?'Pause':'Play';sendScene()};
+ $('restart').onclick=()=>{running=true;$('play').textContent='Pause';jump(0)};
+ $('hazard').onchange=e=>{hazard=e.target.value;jump(0)};
+ $('speed').onchange=e=>{speed=Number(e.target.value);lastTick=performance.now()};
+ document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>jump(Number(b.dataset.stage)));
+ let messageNumber=0;
+ const append=(text,user=false)=>{const el=document.createElement('div');el.className='bubble'+(user?' user':'');el.textContent=text;$('messages').append(el);if(!user)$('latest-reply').textContent=text};
+ window.emergencyHarness={getContext:()=>packet,getMode:mode,setLocalReady(value){if(typeof value!=='boolean')throw Error('Expected boolean');localReady=value;updateConnection();},receiveReply(text){if(typeof text!=='string'||!text.trim()||text.length>10000)throw Error('Invalid reply');append(text);$('message-status').textContent='Reply received from the connected harness.';}};
+ const history=[];let chatBusy=false;
+ $('chat-form').onsubmit=async e=>{
+   e.preventDefault();const text=$('message').value.trim();if(!text||chatBusy)return;
+   const requestMode=offline?'local':'connected';chatBusy=true;append(text,true);$('message').value='';
+   const button=$('chat-form').querySelector('button');button.disabled=true;
+   $('message-status').textContent=requestMode==='local'?'Asking the model on this computer…':'Asking Gemma through OpenRouter…';
+   window.dispatchEvent(new CustomEvent('assistant:message',{detail:{id:'message-'+(++messageNumber),text,context:packet,assistance:mode()}}));
+   try{
+     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({text,mode:requestMode,context:packet,timing:timing(),history:history.slice(-12)})});
+     const result=await response.json();if(!response.ok)throw Error(result.error||'Assistance unavailable');
+     if(requestMode!==(offline?'local':'connected')){ $('message-status').textContent='Connection mode changed. Please send your message again.';return; }
+     append(result.answer);history.push({role:'user',content:text},{role:'assistant',content:result.answer});
+     if(requestMode==='local'){localReady=true;updateConnection();}
+     $('message-status').textContent='Reply from '+(result.provider==='local'?'the local model.':'Gemma via OpenRouter.')+' Based on the emergency guidance cards.';
+   }catch(error){if(requestMode==='local'){localReady=false;updateConnection();}$('message-status').textContent=error.name==='TimeoutError'?'The model took too long. Please try again.':error.message;}
+   finally{chatBusy=false;button.disabled=false;}
+ };
+
+
+ function timing(){return {deviceNow:new Date().toISOString(),contextReceivedAt:lastReceived,contextAgeSeconds:receivedMono===null?null:Math.max(0,(performance.now()-receivedMono)/1000),offlineElapsedSeconds:offlineStart===null?0:Math.max(0,(performance.now()-offlineStart)/1000),sessionElapsedSeconds:(performance.now()-sessionStart)/1000,source:'device-monotonic'};}
+ let recognition=null;
+ function stopSpeech(){recognition?.abort();recognition=null;$('mic').setAttribute('aria-pressed','false');}
+ const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(Speech){$('mic').disabled=false;$('speech-status').textContent='Dictate, review, then send. Browser speech may use an online service.';}
+ else $('speech-status').textContent='Speech input is unavailable in this browser. You can type below.';
+ $('mic').onclick=()=>{
+   if(recognition){stopSpeech();$('speech-status').textContent='Dictation stopped.';return;}
+   const r=new Speech();
+   if(offline&&!('processLocally' in r)){$('speech-status').textContent='This browser cannot dictate offline. Please type your message.';return;}
+   if(offline)r.processLocally=true;
+   r.lang='en-US';r.interimResults=false;r.continuous=false;recognition=r;
+   const prior=$('message').value;
+   r.onresult=e=>{if(recognition!==r)return;$('message').value=(prior+' '+e.results[0][0].transcript).trim().slice(0,2000);$('speech-status').textContent='Review your message, then press Send.';};
+   r.onerror=e=>{$('speech-status').textContent=e.error==='not-allowed'?'Microphone permission was denied. You can type instead.':'Dictation unavailable ('+e.error+'). You can type instead.';};
+   r.onend=()=>{if(recognition===r){recognition=null;$('mic').setAttribute('aria-pressed','false');}};
+   try{r.start();$('mic').setAttribute('aria-pressed','true');$('speech-status').textContent='Listening… Tap the microphone to stop.';}catch{stopSpeech();$('speech-status').textContent='Could not start dictation. Please type instead.';}
+ };
+ window.addEventListener('pagehide',stopSpeech);
+ setInterval(()=>{const now=performance.now();const t=timing();$('local-time').textContent=offline?'Offline for '+Math.floor(t.offlineElapsedSeconds/60)+'m '+Math.floor(t.offlineElapsedSeconds%60)+'s · last update '+(t.contextAgeSeconds===null?'unavailable':Math.floor(t.contextAgeSeconds)+'s ago'):'Device time · '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});if(running&&!offline&&!document.hidden)seconds=Math.min(300,seconds+(now-lastTick)/1000*speed);lastTick=now;clock();if(seconds===300){running=false;$('play').textContent='Play';sendScene()}if(!controller&&!document.hidden)refresh();},1000);
+ clock();changeConnection();refresh();
+})();
+</script></body></html>

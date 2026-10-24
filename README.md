@@ -55,3 +55,16 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 ## License
 
 TBD.
+
+## Weather companion demo
+
+A separate module provides simulated flood, wildfire, earthquake, power-outage and extreme-heat context, with a responsive animated companion UI.
+
+```sh
+npm run weather:install
+npm run weather:demo
+# Open http://127.0.0.1:4317/companion
+npm run weather:test
+```
+
+Demo controls include three event stages and an offline transition. The companion chat uses a server-side cards-based adapter: OpenRouter while connected, or the local model endpoint in offline mode. Set OPENROUTER_API_KEY in the server environment for connected chat. It does not yet use the retrieval agent in `src/agent.ts`. Voice, local model startup, and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
