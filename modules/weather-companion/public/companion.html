@@ -674,6 +674,15 @@ form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transpare
     const audio = new Float32Array(length);
     let offset = 0;
     for (const c of chunks) { audio.set(c, offset); offset += c.length; }
+    // Silence check. macOS gives an app pure silence (all zeros) when it isn't allowed to use the
+    // microphone, and Whisper "hears" words like "you" in silence. So don't transcribe silence; explain.
+    let peak = 0;
+    for (const s of audio) peak = Math.max(peak, Math.abs(s));
+    if (peak === 0) {
+      $("hint").textContent = "The microphone sent no sound. Allow it in System Settings > Privacy & Security > Microphone, then try again.";
+      return;
+    }
+    if (peak < 0.02) { $("hint").textContent = "I couldn't hear anything. Speak a little closer to the microphone."; return; }
     mic.classList.add("busy");
     mic.disabled = true;
     $("hint").textContent = "Writing down what you said…";

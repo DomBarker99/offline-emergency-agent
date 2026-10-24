@@ -14,6 +14,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { Agent, assistant, OpenAIProvider, Runner, setTracingDisabled, user } from "@openai/agents";
+import OpenAI from "openai";
 import { profileText } from "./profile.ts";
 import { loadLibrary, type Passage } from "./search.ts";
 
@@ -36,10 +37,33 @@ export const PROVIDERS = {
     get apiKey() {
       return process.env.OPENROUTER_API_KEY;
     },
-    extra: { reasoning: { enabled: false } }, // Gemma "thinking" off: faster, same answers
+    // "Thinking" off: faster, same answers for Gemma; Granite otherwise spends its whole answer budget thinking.
+    extra: { reasoning: { enabled: false } },
   },
 };
 export type ProviderName = keyof typeof PROVIDERS;
+
+/**
+ * The HTTP client for one provider. It adds the provider's `extra` fields to every request body.
+ *
+ * Why not the SDK's modelSettings.providerData: the Agents SDK removes a `reasoning` field there for
+ * models it doesn't consider OpenAI reasoning models (all of ours), so "thinking off" never reached
+ * OpenRouter. Adding the fields at the HTTP level always works.
+ */
+function clientFor(target: (typeof PROVIDERS)[ProviderName]): OpenAI {
+  const extra: Record<string, unknown> = target.extra;
+  return new OpenAI({
+    baseURL: target.baseURL,
+    apiKey: target.apiKey,
+    maxRetries: 1,
+    fetch: async (url, init) => {
+      if (Object.keys(extra).length && typeof init?.body === "string") {
+        init = { ...init, body: JSON.stringify({ ...JSON.parse(init.body), ...extra }) };
+      }
+      return fetch(url, init);
+    },
+  });
+}
 
 // ---- What the agent knows -------------------------------------------------------------------------
 const readJson = (path: string) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8"));
@@ -68,7 +92,7 @@ const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
 ];
 
 // ---- The system prompt ----------------------------------------------------------------------------
-export const PROMPT_VERSION = "2026-10-24.4"; // bump when RULES or the profile change; it's written to the log
+export const PROMPT_VERSION = "2026-10-24.5"; // bump when RULES or the profile change; it's written to the log
 const RULES = [
   "You are an offline emergency assistant running on the user's laptop with no internet.",
   "Answer ONLY from the cards and official passages provided with each question",
@@ -192,13 +216,13 @@ export async function ask(
 
   // 5: the Agents SDK call. Earlier turns go in as plain text; only this question gets sources.
   const runner = new Runner({
-    modelProvider: new OpenAIProvider({ baseURL: target.baseURL, apiKey: target.apiKey, useResponses: false }),
+    modelProvider: new OpenAIProvider({ openAIClient: clientFor(target), useResponses: false }),
   });
   const agent = new Agent({
     name: "Emergency assistant",
     instructions: SYSTEM_PROMPT,
     model: model ?? target.model,
-    modelSettings: { temperature: 0.2, maxTokens: 600, providerData: target.extra },
+    modelSettings: { temperature: 0.2, maxTokens: 600 },
   });
   const input = [...history.map((t) => (t.role === "user" ? user(t.text) : assistant(t.text))), user(message)];
   // An AbortSignal cancels the HTTP call; without timeoutMs the call waits as long as the server needs.

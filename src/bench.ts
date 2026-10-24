@@ -2,6 +2,7 @@
  * Benchmark on the questions in data/eval/questions.json.
  *
  * Usage:  npm run bench -- --provider openrouter        (or local)
+ *         npm run bench -- --provider openrouter --model ibm-granite/granite-4.2-8b   (another model)
  *         npm run bench -- --retrieval-only             (search only, no model, a few seconds)
  *
  * Measures, per question: did search put a known-good source page in the top 5 ("gold"), did the answer
@@ -9,7 +10,7 @@
  * can't answer, did the right danger rule fire, any flags, time. Results: logs/bench/<time>.json
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { ask, citedIds, searchText, type ProviderName, type Turn } from "./agent.ts";
+import { ask, citedIds, PROMPT_VERSION, searchText, type ProviderName, type Turn } from "./agent.ts";
 import { loadLibrary } from "./search.ts";
 
 interface Question {
@@ -56,7 +57,17 @@ interface Row {
 }
 const rows: Row[] = [];
 for (const q of questions) {
-  const t = await ask(q.question, q.history ?? [], provider, flag("--model"));
+  let t;
+  try {
+    t = await ask(q.question, q.history ?? [], provider, flag("--model"), { timeoutMs: 180_000 });
+  } catch (error) {
+    // One failed answer (timeout, provider error) is counted as a failure instead of ending the run.
+    const message = error instanceof Error ? error.message : String(error);
+    rows.push({ id: q.id, type: q.type, goldShown: false, goldCited: false, expectHit: false, declined: false,
+      dangerOk: q.danger ? false : null, flags: [`error:${message.slice(0, 80)}`], ms: 0, answer: "" });
+    console.log(`${q.id.padEnd(18)} ERROR ${message}`);
+    continue;
+  }
   const cited = new Set(citedIds(t.answer));
   const row: Row = {
     id: q.id,
@@ -78,7 +89,7 @@ const oos = rows.filter((r) => r.type === "out-of-scope");
 const dangerRows = rows.filter((r) => r.dangerOk !== null);
 const count = (rs: Row[], f: "goldShown" | "goldCited" | "expectHit" | "declined" | "dangerOk") => rs.filter((r) => r[f] === true).length;
 const summary = [
-  `Agent (${provider}, ${rows.length} questions)`,
+  `Agent (${provider}${flag("--model") ? " " + flag("--model") : ""}, ${rows.length} questions, prompt ${PROMPT_VERSION})`,
   `  right source shown (answerable)     ${pct(count(inScope, "goldShown"), inScope.length)}`,
   `  right source cited (answerable)     ${pct(count(inScope, "goldCited"), inScope.length)}`,
   `  expected key fact in answer         ${pct(count(inScope, "expectHit"), inScope.length)}`,
@@ -90,6 +101,7 @@ const summary = [
 ].join("\n");
 console.log(`\n${summary}`);
 mkdirSync(new URL("../logs/bench/", import.meta.url), { recursive: true });
-const out = new URL(`../logs/bench/${new Date().toISOString().replace(/[:.]/g, "-")}-${provider}.json`, import.meta.url);
+const modelTag = flag("--model") ? `-${flag("--model")!.replace(/[^a-z0-9.-]+/gi, "_")}` : "";
+const out = new URL(`../logs/bench/${new Date().toISOString().replace(/[:.]/g, "-")}-${provider}${modelTag}.json`, import.meta.url);
 writeFileSync(out, JSON.stringify({ summary, rows }, null, 2));
 console.log(`\nDetails: ${out.pathname}`);

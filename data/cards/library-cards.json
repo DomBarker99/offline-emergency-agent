@@ -6,7 +6,7 @@
       "flood"
     ],
     "danger": "immediate",
-    "body": "If told to evacuate, do so immediately. If you live in a flood prone area or are camping in a low lying area, get to higher ground immediately. Don't walk through flood waters. Do NOT drive into flooded roadways or around a barricade; Turn Around, Don't Drown!",
+    "body": "Avoid flood waters at all costs and evacuate immediately when water starts to rise. Move to higher ground or a higher floor. Do not walk, swim or drive through flood waters. Turn Around, Don’t Drown! Remember, just six inches of moving water can knock you down, and one foot of moving water can sweep your vehicle away. Stay off bridges over fast-moving water. Do not touch electrical equipment if it is wet or if you are standing in water.",
     "source": {
       "name": "National Weather Service (NOAA)",
       "url": "https://www.weather.gov/safety/flood-during",
@@ -17,31 +17,43 @@
     "quotes": [
       {
         "passageId": "nws:safety__flood-during:1",
-        "quote": "If told to evacuate, do so immediately.",
+        "quote": "Avoid flood waters at all costs and evacuate immediately when water starts to rise.",
         "url": "https://www.weather.gov/safety/flood-during",
         "publisher": "National Weather Service (NOAA)"
       },
       {
-        "passageId": "nws:safety__flood-during:1",
-        "quote": "If you live in a flood prone area or are camping in a low lying area, get to higher ground immediately.",
-        "url": "https://www.weather.gov/safety/flood-during",
-        "publisher": "National Weather Service (NOAA)"
+        "passageId": "ready-gov:floods:1",
+        "quote": "Move to higher ground or a higher floor.",
+        "url": "https://www.ready.gov/floods",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "nws:safety__flood-during:1",
-        "quote": "Don't walk through flood waters.",
-        "url": "https://www.weather.gov/safety/flood-during",
-        "publisher": "National Weather Service (NOAA)"
+        "passageId": "ready-gov:floods:1",
+        "quote": "Do not walk, swim or drive through flood waters. Turn Around, Don’t Drown!",
+        "url": "https://www.ready.gov/floods",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "nws:safety__flood-during:1",
-        "quote": "Do NOT drive into flooded roadways or around a barricade; Turn Around, Don't Drown!",
-        "url": "https://www.weather.gov/safety/flood-during",
-        "publisher": "National Weather Service (NOAA)"
+        "passageId": "ready-gov:floods:1",
+        "quote": "Remember, just six inches of moving water can knock you down, and one foot of moving water can sweep your vehicle away.",
+        "url": "https://www.ready.gov/floods",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:floods:1",
+        "quote": "Stay off bridges over fast-moving water.",
+        "url": "https://www.ready.gov/floods",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:floods:4",
+        "quote": "Do not touch electrical equipment if it is wet or if you are standing in water.",
+        "url": "https://www.ready.gov/floods",
+        "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)"
+    "draftedBy": "Sentences re-selected 2026-10-24 for the on-screen card (3 to 7 short steps); every sentence checked verbatim against its passage"
   },
   {
     "id": "C2",
@@ -94,20 +106,20 @@
       "fire"
     ],
     "danger": "immediate",
-    "body": "If fire officials suggest evacuating, it’s best to leave right away. Think about evacuating if you have trouble breathing or other symptoms that do not get better. Stay inside as much as possible. Keep windows and doors closed and turn on an HVAC system with a filter or use a portable air filter if available. If you must go outdoors during a wildfire smoke event, wear a NIOSH Approved N95 respirator. Pay attention to air quality reports. Follow instructions about exercise and going outside for \"sensitive individuals.\"",
+    "body": "Evacuate immediately if authorities tell you to do so. Think about evacuating if you have trouble breathing or other symptoms that do not get better. Stay inside as much as possible. Keep windows and doors closed and turn on an HVAC system with a filter or use a portable air filter if available. If you must go outdoors during a wildfire smoke event, wear a NIOSH Approved N95 respirator. If trapped, call 9-1-1 and give your location, but be aware that emergency response could be delayed or impossible. Turn on lights to help rescuers find you.",
     "source": {
-      "name": "CAL FIRE (Ready for Wildfire)",
-      "url": "https://www.readyforwildfire.org/prepare-for-wildfire/go-evacuation-guide",
+      "name": "FEMA (Ready.gov)",
+      "url": "https://www.ready.gov/wildfires",
       "retrieved": "2026-10-23",
-      "updated": null
+      "updated": "2026-08-11"
     },
     "reviewed": false,
     "quotes": [
       {
-        "passageId": "calfire:prepare-for-wildfire__go-evacuation-guide:7",
-        "quote": "If fire officials suggest evacuating, it’s best to leave right away.",
-        "url": "https://www.readyforwildfire.org/prepare-for-wildfire/go-evacuation-guide",
-        "publisher": "CAL FIRE (Ready for Wildfire)"
+        "passageId": "ready-gov:wildfires:3",
+        "quote": "Evacuate immediately if authorities tell you to do so.",
+        "url": "https://www.ready.gov/wildfires",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
         "passageId": "cdc:wildfires__risk-factors__wildfire-smoke-and-people-with-chronic-conditions:2",
@@ -128,23 +140,29 @@
         "publisher": "Centers for Disease Control and Prevention (CDC)"
       },
       {
-        "passageId": "cdc:wildfires__risk-factors__wildfire-smoke-and-people-with-chronic-conditions:2",
-        "quote": "Pay attention to air quality reports. Follow instructions about exercise and going outside for \"sensitive individuals.\"",
-        "url": "https://www.cdc.gov/wildfires/risk-factors/wildfire-smoke-and-people-with-chronic-conditions.html",
-        "publisher": "Centers for Disease Control and Prevention (CDC)"
+        "passageId": "ready-gov:wildfires:3",
+        "quote": "If trapped, call 9-1-1 and give your location, but be aware that emergency response could be delayed or impossible.",
+        "url": "https://www.ready.gov/wildfires",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:wildfires:3",
+        "quote": "Turn on lights to help rescuers find you.",
+        "url": "https://www.ready.gov/wildfires",
+        "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)"
+    "draftedBy": "Sentences re-selected 2026-10-24 for the on-screen card (3 to 7 short steps); every sentence checked verbatim against its passage"
   },
   {
     "id": "C4",
-    "title": "Power outage: carbon monoxide and food",
+    "title": "Power outage: carbon monoxide, food and medicine",
     "scenarios": [
       "power-outage"
     ],
     "danger": "immediate",
-    "body": "Never use a generator, pressure washer, or any gasoline-powered engine inside your home, basement, or garage or less than 20 feet from any window, door, or vent. Never use a charcoal grill, hibachi, lantern, or portable camping stove inside a home, tent, or camper. When using a generator, use a battery-powered or battery backup CO detector in your home. Keep refrigerator and freezer doors closed.",
+    "body": "Never use a generator, pressure washer, or any gasoline-powered engine inside your home, basement, or garage or less than 20 feet from any window, door, or vent. Never use a gas stovetop or oven to heat your home. Keep freezers and refrigerators closed. Insulin products contained in vials or cartridges supplied by the manufacturers (opened or unopened) may be left unrefrigerated at a temperature between 59°F and 86°F for up to 28 days and continue to work. Keep insulin away from direct heat and out of direct sunlight. Go to a community location with power if heat or cold is extreme.",
     "source": {
       "name": "Centers for Disease Control and Prevention (CDC)",
       "url": "https://www.cdc.gov/natural-disasters/response/what-to-do-protect-yourself-during-a-power-outage.html",
@@ -160,26 +178,38 @@
         "publisher": "Centers for Disease Control and Prevention (CDC)"
       },
       {
-        "passageId": "cdc:natural-disasters__response__what-to-do-protect-yourself-during-a-power-outage:4",
-        "quote": "Never use a charcoal grill, hibachi, lantern, or portable camping stove inside a home, tent, or camper.",
-        "url": "https://www.cdc.gov/natural-disasters/response/what-to-do-protect-yourself-during-a-power-outage.html",
-        "publisher": "Centers for Disease Control and Prevention (CDC)"
+        "passageId": "ready-gov:power-outages:4",
+        "quote": "Never use a gas stovetop or oven to heat your home.",
+        "url": "https://www.ready.gov/power-outages",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "cdc:natural-disasters__response__what-to-do-protect-yourself-during-a-power-outage:4",
-        "quote": "When using a generator, use a battery-powered or battery backup CO detector in your home.",
-        "url": "https://www.cdc.gov/natural-disasters/response/what-to-do-protect-yourself-during-a-power-outage.html",
-        "publisher": "Centers for Disease Control and Prevention (CDC)"
+        "passageId": "ready-gov:power-outages:1",
+        "quote": "Keep freezers and refrigerators closed.",
+        "url": "https://www.ready.gov/power-outages",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "usda-fsis:food-safety__safe-food-handling-and-preparation__emergencies__keep-your-food-safe-during-emergencies:2",
-        "quote": "Keep refrigerator and freezer doors closed.",
-        "url": "https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/emergencies/keep-your-food-safe-during-emergencies",
-        "publisher": "USDA Food Safety and Inspection Service / FoodSafety.gov (HHS)"
+        "passageId": "fda:drugs__emergency-preparedness-drugs__information-regarding-insulin-storage-and-switching-between-products-emergency:3",
+        "quote": "Insulin products contained in vials or cartridges supplied by the manufacturers (opened or unopened) may be left unrefrigerated at a temperature between 59°F and 86°F for up to 28 days and continue to work.",
+        "url": "https://www.fda.gov/drugs/emergency-preparedness-drugs/information-regarding-insulin-storage-and-switching-between-products-emergency",
+        "publisher": "U.S. Food and Drug Administration (FDA)"
+      },
+      {
+        "passageId": "fda:drugs__emergency-preparedness-drugs__information-regarding-insulin-storage-and-switching-between-products-emergency:4",
+        "quote": "Keep insulin away from direct heat and out of direct sunlight.",
+        "url": "https://www.fda.gov/drugs/emergency-preparedness-drugs/information-regarding-insulin-storage-and-switching-between-products-emergency",
+        "publisher": "U.S. Food and Drug Administration (FDA)"
+      },
+      {
+        "passageId": "ready-gov:power-outages:2",
+        "quote": "Go to a community location with power if heat or cold is extreme.",
+        "url": "https://www.ready.gov/power-outages",
+        "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)"
+    "draftedBy": "Sentences re-selected 2026-10-24 for the on-screen card (3 to 7 short steps); every sentence checked verbatim against its passage"
   },
   {
     "id": "C5",
@@ -188,57 +218,69 @@
       "earthquake"
     ],
     "danger": "immediate",
-    "body": "Drop, Cover, and Hold On − Drop to your hands and knees to minimize injuries from falls, and minimize movement to avoid debris— walking or running makes you vulnerable to moving, flying, or falling objects. − Cover your head and neck with your arms and other objects. If sturdy furniture is nearby and you are able to crawl there without going through debris, cover under sturdy furniture to protect your body, and cover your head and neck with your arms and other objects. − Hold on to stay covered during shaking. Do not run outside. If indoors, stay there until the  shaking stops. If in bed, stay there and cover your  head and neck with a pillow. Check yourself for injury. After the shaking stops, if you are in a damaged  building and there is a safe way out through the  debris, leave and go to an open space outside. Do  not go back inside until an authority figure tells  you it is safe. Expect aftershocks to follow the largest shock of  an earthquake sequence.",
+    "body": "Drop where you are onto hands and knees. Cover your head and neck with one arm and hand. If a sturdy table or desk is nearby, crawl underneath it for shelter. Hold until the shaking stops. If you are inside, stay and do not run outside; avoid doorways. Keep your cane near you so it can be used when the shaking stops. Expect aftershocks to follow the main shock of an earthquake. If you are in a damaged building, go outside and quickly move away from the building.",
     "source": {
-      "name": "FEMA",
-      "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
+      "name": "FEMA (Ready.gov)",
+      "url": "https://www.ready.gov/earthquakes",
       "retrieved": "2026-10-23",
-      "updated": "2026-06-27"
+      "updated": "2026-09-09"
     },
     "reviewed": false,
     "quotes": [
       {
-        "passageId": "ready-gov:doc__content__pkg__GOVPUB-HS5_100-PURL-gpo159555__pdf__GOVPUB-HS5_100-PURL-gpo159555.pdf:10",
-        "quote": "Drop, Cover, and Hold On − Drop to your hands and knees to minimize injuries from falls, and minimize movement to avoid debris— walking or running makes you vulnerable to moving, flying, or falling objects. − Cover your head and neck with your arms and other objects. If sturdy furniture is nearby and you are able to crawl there without going through debris, cover under sturdy furniture to protect your body, and cover your head and neck with your arms and other objects. − Hold on to stay covered during shaking.",
-        "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
-        "publisher": "FEMA"
-      },
-      {
-        "passageId": "ready-gov:doc__content__pkg__GOVPUB-HS5_100-PURL-gpo159555__pdf__GOVPUB-HS5_100-PURL-gpo159555.pdf:10",
-        "quote": "Do not run outside. If indoors, stay there until the  shaking stops. If in bed, stay there and cover your  head and neck with a pillow.",
-        "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
-        "publisher": "FEMA"
-      },
-      {
-        "passageId": "ready-gov:doc__sites__default__files__2024-03__ready.gov_earthquake_hazard-info-sheet.pdf:2",
-        "quote": "Check yourself for injury.",
-        "url": "https://www.ready.gov/sites/default/files/2024-03/ready.gov_earthquake_hazard-info-sheet.pdf",
+        "passageId": "ready-gov:earthquakes:3",
+        "quote": "Drop where you are onto hands and knees.",
+        "url": "https://www.ready.gov/earthquakes",
         "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "ready-gov:doc__content__pkg__GOVPUB-HS5_100-PURL-gpo159555__pdf__GOVPUB-HS5_100-PURL-gpo159555.pdf:10",
-        "quote": "After the shaking stops, if you are in a damaged  building and there is a safe way out through the  debris, leave and go to an open space outside. Do  not go back inside until an authority figure tells  you it is safe.",
-        "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
-        "publisher": "FEMA"
+        "passageId": "ready-gov:earthquakes:3",
+        "quote": "Cover your head and neck with one arm and hand. If a sturdy table or desk is nearby, crawl underneath it for shelter.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
       },
       {
-        "passageId": "ready-gov:doc__content__pkg__GOVPUB-HS5_100-PURL-gpo159555__pdf__GOVPUB-HS5_100-PURL-gpo159555.pdf:10",
-        "quote": "Expect aftershocks to follow the largest shock of  an earthquake sequence.",
-        "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo159555/pdf/GOVPUB-HS5_100-PURL-gpo159555.pdf",
-        "publisher": "FEMA"
+        "passageId": "ready-gov:earthquakes:4",
+        "quote": "Hold until the shaking stops.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:earthquakes:2",
+        "quote": "If you are inside, stay and do not run outside; avoid doorways.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:earthquakes:5",
+        "quote": "Keep your cane near you so it can be used when the shaking stops.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:earthquakes:7",
+        "quote": "Expect aftershocks to follow the main shock of an earthquake.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:earthquakes:7",
+        "quote": "If you are in a damaged building, go outside and quickly move away from the building.",
+        "url": "https://www.ready.gov/earthquakes",
+        "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)"
+    "draftedBy": "Sentences re-selected 2026-10-24 for the on-screen card (3 to 7 short steps); every sentence checked verbatim against its passage"
   },
   {
     "id": "C6",
-    "title": "Heat illness: get medical help",
+    "title": "Extreme heat: stay cool, get help",
     "scenarios": [
       "extreme-heat"
     ],
     "danger": "immediate",
-    "body": "If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately. Call your healthcare provider if symptoms get worse or last more than an hour.",
+    "body": "If air conditioning is not available in your home find a cooling center. Do not rely on a fan as your primary cooling device. Take cool showers or baths. Drink plenty of fluids to stay hydrated. Check on family members, older adults and neighbors. If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately.",
     "source": {
       "name": "FEMA (Ready.gov)",
       "url": "https://www.ready.gov/heat",
@@ -248,26 +290,50 @@
     "reviewed": false,
     "quotes": [
       {
-        "passageId": "ready-gov:heat:3",
-        "quote": "If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately.",
+        "passageId": "ready-gov:heat:2",
+        "quote": "If air conditioning is not available in your home find a cooling center.",
+        "url": "https://www.ready.gov/heat",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:heat:1",
+        "quote": "Do not rely on a fan as your primary cooling device.",
+        "url": "https://www.ready.gov/heat",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:heat:2",
+        "quote": "Take cool showers or baths.",
+        "url": "https://www.ready.gov/heat",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:heat:2",
+        "quote": "Drink plenty of fluids to stay hydrated.",
+        "url": "https://www.ready.gov/heat",
+        "publisher": "FEMA (Ready.gov)"
+      },
+      {
+        "passageId": "ready-gov:heat:2",
+        "quote": "Check on family members, older adults and neighbors.",
         "url": "https://www.ready.gov/heat",
         "publisher": "FEMA (Ready.gov)"
       },
       {
         "passageId": "ready-gov:heat:3",
-        "quote": "Call your healthcare provider if symptoms get worse or last more than an hour.",
+        "quote": "If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately.",
         "url": "https://www.ready.gov/heat",
         "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)",
+    "draftedBy": "Sentences re-selected 2026-10-24 for the on-screen card (3 to 7 short steps); every sentence checked verbatim against its passage",
     "removedQuotes": [
       "If possible, move the person suffering from heat stroke into a cool, shaded area.",
       "Remove any outer clothing.",
       "Place a cold, wet cloth or ice pack on the head, neck, armpits, and groin.",
       "If you have signs of heat cramps or heat exhaustion, go to a cooler location and cool down by removing excess clothing and taking sips of sports drinks or water."
     ],
-    "note": "2026-10-24: first-aid steps removed (no medical advice beyond handling and referral)."
+    "note": "2026-10-24: first-aid steps removed (no medical advice beyond handling and referral); later rebuilt with protective actions only."
   }
 ]
