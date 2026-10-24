@@ -27,7 +27,7 @@ Requirements: Node.js 24+ (runs TypeScript directly). The library (`data/library
 ```sh
 npm ci
 cp .env.example .env                       # add OPENROUTER_API_KEY to use OpenRouter
-npm run app                                # desktop window (Electron)
+npm run app                                # desktop window (Electron): the weather companion + the agent
 npm run chat -- --provider openrouter      # terminal chat; or --provider local
 npm run bench -- --provider openrouter     # 50 evaluation questions
 ```
@@ -66,4 +66,4 @@ npm run weather:demo
 npm run weather:test
 ```
 
-Demo controls include three event stages and an offline transition. The companion chat uses a server-side cards-based adapter: OpenRouter while connected, or the local model endpoint in offline mode. Set OPENROUTER_API_KEY in the server environment for connected chat. It does not yet use the retrieval agent in `src/agent.ts`. Voice, local model startup, and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
+The desktop app (`npm run app`) shows this companion in its window and starts its server itself; `weather:demo` runs the same page in a browser. Demo controls (`AGENT_VIEW=demo`) include three event stages and an offline transition. The companion's chat is answered by the shared agent in `src/agent.ts`. For the browser demo, set `OPENROUTER_API_KEY` and `AGENT_PROVIDER` in the shell (it doesn't read `.env`). Voice and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).

@@ -54,7 +54,7 @@ const library = await loadLibrary();
 
 /** Danger words -> the scenario whose action card must be shown. Plain rules: same result every time. */
 const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
-  { id: "flood", scenario: "flood", pattern: /\b(water (is )?(rising|coming in)|flood(s|ing|ed)?|flash flood|swept away)\b/i },
+  { id: "flood", scenario: "flood", pattern: /\b((water|creek|river|stream) (is )?(rising|coming in|overflowing)|flood(s|ing|ed)?|flash flood|swept away)\b/i },
   { id: "gas", scenario: "gas", pattern: /\b(smell(s|ing)? (of )?gas|gas leak|huele a gas)\b/i },
   { id: "fire", scenario: "fire", pattern: /\b((wild)?fires?|smoke|smoky|burning|incendio|humo)\b/i },
   // A fuel-burning appliance AND an enclosed place in the same sentence.
@@ -148,9 +148,18 @@ export interface Source {
  * Answers one question.
  * @param provider  "local" (llama-server on this laptop) or "openrouter"
  * @param model     optional model name for that provider (default: Gemma 4 26B)
+ * @param extra     optional, from a screen that knows more about the moment (the weather companion):
+ *                  situation = text added to the prompt before the question (e.g. simulated weather);
+ *                  searchHint = words added to the library search only (e.g. "flood")
  * @throws if OpenRouter is chosen without OPENROUTER_API_KEY, or the model server can't be reached
  */
-export async function ask(question: string, history: Turn[], provider: ProviderName, model?: string) {
+export async function ask(
+  question: string,
+  history: Turn[],
+  provider: ProviderName,
+  model?: string,
+  extra: { situation?: string; searchHint?: string } = {},
+) {
   const started = performance.now();
   const target = PROVIDERS[provider];
   if (!target.apiKey) throw new Error(`No API key for ${provider}: set OPENROUTER_API_KEY in .env`);
@@ -158,7 +167,8 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
   const query = searchText(question, history); // 1
   const dangers = DANGER_RULES.filter((r) => r.pattern.test(query)); // 2
   const cards = CARDS.filter((c) => dangers.some((d) => c.scenarios.includes(d.scenario)));
-  const passages: Passage[] = await library.search(query, PASSAGES_PER_QUESTION); // 3
+  const searchQuery = extra.searchHint ? `${query} ${extra.searchHint}` : query;
+  const passages: Passage[] = await library.search(searchQuery, PASSAGES_PER_QUESTION); // 3
   const searchMs = performance.now() - started;
 
   // 4: cards first, then passages with publisher and date, then the question.
@@ -171,7 +181,8 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
     }),
   ];
   // The reminder sits right before the question because small models follow nearby instructions best.
-  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\n${MEDICAL_REMINDER}\n\nQuestion: ${question}`;
+  const situation = extra.situation ? `Current situation:\n${extra.situation}\n\n` : "";
+  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\n${situation}${MEDICAL_REMINDER}\n\nQuestion: ${question}`;
 
   // 5: the Agents SDK call. Earlier turns go in as plain text; only this question gets sources.
   const runner = new Runner({
@@ -199,7 +210,7 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
     model: model ?? target.model,
     promptVersion: PROMPT_VERSION,
     question,
-    searchQuery: query,
+    searchQuery,
     dangers: dangers.map((d) => d.id),
     sources,
     flags,

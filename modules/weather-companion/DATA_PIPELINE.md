@@ -91,12 +91,12 @@ The browser emits `assistant:mode` with `{mode, reason, context, contextFreshnes
 
 This supports switching an already loaded page. It does not yet cache the application for offline reload, persist weather context across reloads, or deliver messages to a model without the harness integration. Browser online status is a connectivity hint, not verification of upstream internet reachability.
 
-### Connected companion chat
-`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history, rejects foreign browser origins, and applies a model timeout. The response is `{answer, provider, model, contextFreshness, sources}`. The API key exists only in the server environment (`OPENROUTER_API_KEY`).
+### Companion chat (shared agent)
+`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, timing?, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history and rejects foreign browser origins. The response is `{answer, provider, model, contextFreshness}`: the answer only, with citation tags removed.
 
-Connected mode uses OpenRouter Gemma; local mode uses `LOCAL_BASE_URL` (default `http://127.0.0.1:8080/v1`) and `LOCAL_MODEL` (default `gemma4-26b-a4b`). There is no cloud fallback in local mode. Errors remain visible, and responses arriving after a mode change are discarded. Browser history is memory-only, capped at 12 turns per request. Connected requests send conversation history and a compact simulated weather summary to OpenRouter.
+`src/chat.ts` hands the question to the shared agent, `ask()` in the repo's `src/agent.ts`, so the companion answers exactly like the desktop app: meaning search over the 2,140-passage library (`data/library/`), action cards on danger words, the household profile, and the medical limit. The companion adds its conversation style (one manageable step at a time), the simulated weather context and the device timing as a "current situation" block, and the scenario's hazard as a search hint. Sources, danger rules and flags are logged in `logs/turns-<date>.jsonl`, not returned.
 
-This is a cards-based demo adapter, not the root agent's retrieval pipeline. It loads the repository's emergency cards; the full root agent additionally requires the missing built passage/vector library and embedding model. No tools or autonomous actions are enabled. Voice remains unconnected. Successful local replies confirm local readiness; switching mode alone does not.
+Model choice: `AGENT_PROVIDER` (`local` or `openrouter`) is used while the page is online. When the page is offline (really, or "Simulate offline"), the answer comes from the local model (`LOCAL_BASE_URL`, default `http://127.0.0.1:8080/v1`). There is no cloud fallback offline. The OpenRouter key exists only in the server environment (`OPENROUTER_API_KEY`). No tools or autonomous actions are enabled.
 
 ```mermaid
 flowchart TD
@@ -118,3 +118,8 @@ The browser now sends optional `timing`: device wall time, context receipt time,
 The most recent assistant reply stays visible above an expandable Previous messages history. Browser SpeechRecognition fills the composer for review before Send. Online recognition may use the browser vendor's service. Offline recognition requires `processLocally`; unsupported or missing language packs produce a visible error instead of a cloud fallback. Actual microphone capture must be tested on the target browser/device.
 
 Retrieval searches the shipped guidance cards and, when supplied, `data/library/passages.jsonl` using local keyword matching (top five cards plus top five passages). The passage file is not present yet. This is not semantic/vector retrieval; the root agent's embedding pipeline remains separate. The request includes retrieval method and passage count in the response for inspection.
+
+### Emergency assistance and shipped library
+Merged Dom's shipped 2,140-passage library and vector index from main. The companion currently uses local keyword retrieval, with title/heading boosts; the vector index is available for subsequent semantic retrieval integration. `GET /api/pack?q=...` exposes source-backed card and passage results without invoking a model. The UI provides Help me now, follow-up actions, and direct pack browsing. These actions do not dispatch assistance or certify safety.
+
+The optional support contact is stored only in this origin's localStorage, removable from the UI, and excluded from model prompts. The call link invokes the device's calling handler; it does not confirm contact or delivery. Pack browsing requires the local server running but no external internet. Speech/browser offline reload limitations remain as documented above.

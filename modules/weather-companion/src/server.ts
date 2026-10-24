@@ -1,3 +1,4 @@
+import { retrieve } from './retrieval.ts';
 import { ChatRequest, answerChat } from './chat.ts';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -19,13 +20,18 @@ const server = createServer(async (req, res) => {
   };
   try {
     const url = new URL(req.url ?? '/', 'http://localhost');
+    if(req.method==='GET' && url.pathname==='/api/pack'){
+      const query=(url.searchParams.get('q')??'flood').slice(0,300);
+      const result=await retrieve(query);
+      return reply(200,{...result,items:result.items.map(({id,title,body,source,passageId})=>({id,title,body,source,passageId}))});
+    }
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       if (req.headers.origin && req.headers.origin !== 'http://'+req.headers.host) return reply(403,{error:'Origin not allowed'});
       if (!req.headers['content-type']?.startsWith('application/json')) return reply(415,{error:'JSON required'});
       let body='';for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>524288)return reply(413,{error:'Request too large'});}
       let input;try{input=ChatRequest.safeParse(JSON.parse(body));}catch{return reply(400,{error:'Invalid JSON'});}
       if(!input.success)return reply(400,{error:'Invalid chat request'});
-      try{return reply(200,await answerChat(input.data));}catch{return reply(503,{error:input.data.mode==='local'?'Local assistance is unavailable. Start the local model server.':'Online assistance is unavailable. Check the server configuration or retry.'});}
+      try{return reply(200,await answerChat(input.data));}catch(error){console.error('chat failed:',error instanceof Error?error.message:error);return reply(503,{error:input.data.mode==='local'?'Local assistance is unavailable. Start the local model server.':'Online assistance is unavailable. Check the server configuration or retry.'});}
     }
     if (req.method === 'GET' && ['/scene.js' , '/studio.js', '/vendor/gsap.min.js'].includes(url.pathname)) {
       const asset = await readFile(new URL('../public' + url.pathname, import.meta.url));

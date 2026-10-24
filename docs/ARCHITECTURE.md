@@ -3,8 +3,9 @@
 ## Overview
 
 ```
- npm run app  ──► app/main.ts (Electron) ─┐
- npm run chat ──► src/chat.ts ────────────┴─► ask() in src/agent.ts ──► one Chat Completions call
+ npm run app  ──► app/main.ts (Electron) ──► companion server + page (modules/weather-companion)
+                                                └─ /api/chat ──► chat.ts ─┐
+ npm run chat ──► src/chat.ts ────────────────────────────────────────────┴─► ask() in src/agent.ts ──► one Chat Completions call
                                      │                        ├─ local llama-server (127.0.0.1:8080)
                                      │                        └─ OpenRouter
                                      ├─ src/search.ts   embeddings + cosine search over data/library/
@@ -14,7 +15,7 @@
 
 One process, one language. No servers of its own: the only network call is to the model.
 
-The desktop app runs `ask()` inside Electron's main process. The window (`app/index.html`, `app/renderer.js`) reaches it only through `window.agent.ask(question, history)` and `window.agent.info()`, exposed by `app/preload.cjs`, with context isolation and sandbox on. The model is fixed for the run by `AGENT_PROVIDER`. The window receives **only the answer text, with citation tags removed** (`stripCitations()` in `src/agent.ts`). Sources, danger rules, flags and timings stay in the main process and the log. The window is a stand-in for the real frontend: a replacement only needs to call those two functions.
+The desktop app (`app/main.ts`) starts the weather companion's server (`modules/weather-companion/src/server.ts`, 127.0.0.1:4317) inside Electron's main process and shows its page, `/companion`, in the window. The page asks `/api/chat`, whose handler (`modules/weather-companion/src/chat.ts`) calls `ask()` with the simulated weather as extra context, so the companion and the terminal chat share one agent. `.env` fixes the run: `AGENT_PROVIDER` (model while online; offline always uses the local model), `AGENT_VIEW` (`production` or `demo` controls) and `AGENT_SCENARIO` (flood, fire, earthquake, outage or heat). The page shows only answers; sources, dangers, flags and timings are in the log.
 
 ## Per question (`ask()` in `src/agent.ts`)
 
@@ -32,7 +33,8 @@ The desktop app runs `ask()` inside Electron's main process. The window (`app/in
 ## Files
 
 ```
-app/               desktop app: main.ts (Electron main process), preload.cjs (bridge), index.html + renderer.js (window)
+app/main.ts        desktop app: starts the companion server in-process and opens its page in a window
+modules/weather-companion/   the companion: simulated hazard feeds, animated page, /api/chat → ask()
 src/agent.ts       ask(): everything above, plus providers, rules and the system prompt
 src/search.ts      embedding model + library search
 src/profile.ts     loads data/profile.json and turns it into the prompt's profile lines
