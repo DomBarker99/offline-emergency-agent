@@ -22,15 +22,26 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). How the library is built:
 
 ## Quick start
 
-Requirements: Node.js 24+ (runs TypeScript directly). The library (`data/library/`, 2,140 official passages) is in the repo. The first start downloads the small embedding model (~130 MB) into `data/models/`; after that everything runs offline. To rebuild the library from new sources, see docs/KNOWLEDGE.md.
+Requirements: Node.js 24+ (runs TypeScript directly). The library (`data/library/`, 2,140 official passages) is in the repo. The first start downloads the small embedding model (~130 MB) and the first dictation downloads the speech model (Whisper base.en, ~77 MB) into `data/models/`; after that everything runs offline. To rebuild the library from new sources, see docs/KNOWLEDGE.md.
 
 ```sh
 npm ci
-cp .env.example .env                       # add OPENROUTER_API_KEY to use OpenRouter
-npm run app                                # desktop window (Electron): the weather companion + the agent
+cp .env.example .env                       # set AGENT_PROVIDER, AGENT_SCENARIO and (for OpenRouter) the key
+npm run app                                # desktop window (Electron): the companion screen + the agent
 npm run chat -- --provider openrouter      # terminal chat; or --provider local
-npm run bench -- --provider openrouter     # 50 evaluation questions
+npm run bench -- --provider openrouter     # 50 evaluation questions (add --model <name> for another model)
 ```
+
+### The desktop app
+
+It opens on an active emergency (`AGENT_SCENARIO`) with a full-window alert, then shows the emergency card, the assistant, the support contact from the profile and the official action card for that emergency.
+
+- **Online:** the card says **Live** and updates from the emergency feed; answers come from `AGENT_PROVIDER`.
+- **Offline** (Wi-Fi off, or no internet behind it): within seconds a banner appears, the card turns grey with the time of the last update, the scene freezes and answers come from the local model. If the internet drops while an online answer is on its way, the question is answered locally.
+- **Ctrl+Shift+O** in the window simulates offline (press again to come back), for rehearsals.
+- **Dictation:** the microphone button records, Whisper transcribes on the laptop, and the words appear in the message box to check before sending. macOS asks once for microphone access.
+
+The emergency data is simulated (the screen says so); the connection check is real: the app probes the internet every 3 seconds.
 
 ### Local model
 
@@ -44,8 +55,9 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 
 | Variable | Used for |
 | --- | --- |
-| `OPENROUTER_API_KEY` | `--provider openrouter` |
-| `AGENT_PROVIDER` | `local` (default) or `openrouter`: which model the app and chat use. Fixed for a run. |
+| `AGENT_PROVIDER` | `local` (default) or `openrouter`: the model the app uses while online, and the chat's default. Offline is always local. |
+| `AGENT_SCENARIO` | The emergency the app opens on: `flood` (default), `fire`, `earthquake`, `outage`, `heat` |
+| `OPENROUTER_API_KEY` | `openrouter` |
 | `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
 | `AGENT_DEVTOOLS` | `1` opens DevTools next to the app window |
 | `CORPUS_DIR` | `npm run embed` default input, and the Python library tools |
@@ -55,15 +67,14 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 
 TBD.
 
-## Weather companion demo
+## Companion module
 
-A separate module provides simulated flood, wildfire, earthquake, power-outage and extreme-heat context, with a responsive animated companion UI.
+`modules/weather-companion` holds the screen and its local server: simulated flood, wildfire, earthquake, power-outage and extreme-heat feeds, the animated window, the connectivity check and the chat bridge to `src/agent.ts`.
 
 ```sh
 npm run weather:install
-npm run weather:demo
-# Open http://127.0.0.1:4317/companion
-npm run weather:test
+npm run weather:test                       # module tests
+npm run weather:demo                       # the same server without Electron: http://127.0.0.1:4317/companion
 ```
 
-The desktop app (`npm run app`) shows this companion in its window and starts its server itself; `weather:demo` runs the same page in a browser. Demo controls (`AGENT_VIEW=demo`) include three event stages and an offline transition. The companion's chat is answered by the shared agent in `src/agent.ts`. For the browser demo, set `OPENROUTER_API_KEY` and `AGENT_PROVIDER` in the shell (it doesn't read `.env`). Voice and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
+`weather:demo` doesn't read `.env`; set `AGENT_PROVIDER`, `AGENT_SCENARIO` and `OPENROUTER_API_KEY` in the shell. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
