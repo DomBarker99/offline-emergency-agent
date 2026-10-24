@@ -33,7 +33,11 @@
   --offline: #5c6670; --offline-soft: #eceef0; --radius: 20px;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; }
+/* The page is a column: the cards (.layout), then the footer. The footer is in the normal flow, so it
+   can never sit on top of a card. On a laptop screen the page is exactly one window tall (only the
+   conversation and the official steps scroll); the narrow layouts below let the page grow. */
+body { height: 100vh; display: flex; flex-direction: column; }
 body { background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, sans-serif; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -43,9 +47,9 @@ a { color: var(--green); }
 /* Read by screen readers, not shown (e.g. the typing indicator's "answering" text). */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ---- Layout: three columns on a laptop screen, one column in a narrow window ------------------ */
+/* ---- Layout: three columns on a laptop screen, two panes in a half-screen window, one column on a phone */
 .layout {
-  height: 100vh; padding: 20px 24px 34px; gap: 16px;
+  flex: 1; min-height: 0; padding: 20px 24px 8px; gap: 16px;
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) minmax(360px, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
@@ -55,17 +59,31 @@ a { color: var(--green); }
 .panel.assistant { grid-area: assistant; }
 .contact { grid-area: contact; }
 .guidance { grid-area: guidance; }
+/* Half a laptop screen (the app's window is at least 720 px wide): two panes. The emergency card,
+   contact and official steps are stacked on the left and scroll with the page; the assistant stays
+   pinned on the right at full window height (position: sticky), so the message box and the newest
+   message are always in view, next to the alert card. */
 @media (max-width: 1040px) {
-  .layout { height: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto;
-            grid-template-areas: "alert alert" "assistant assistant" "contact guidance"; }
-  .panel.assistant { height: 78vh; min-height: 480px; }
+  body { height: auto; min-height: 100vh; }
+  .layout { flex: none; grid-template-columns: minmax(0, 1fr) minmax(340px, 1fr);
+            /* auto rows, not 1fr: an item spanning a 1fr row (the tall assistant) pours all its height
+               into that row, which stretched the official card far below its steps. */
+            grid-template-rows: auto auto auto; align-items: start;
+            grid-template-areas: "alert assistant" "contact assistant" "guidance assistant"; }
+  /* The animated window goes under the text. (.panel.alert-card: more specific than the base
+     .alert-card rule further down, which would otherwise win because it comes later.) */
+  .panel.alert-card { grid-template-columns: minmax(0, 1fr); }
+  .panel.assistant { position: sticky; top: 20px; align-self: start; height: calc(100vh - 40px); min-height: 480px; }
 }
+/* Phone-sized browser window (npm run weather:demo only): one column, the page scrolls. */
 @media (max-width: 680px) {
-  .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "alert" "assistant" "contact" "guidance"; padding: 12px; }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto;
+            grid-template-areas: "alert" "assistant" "contact" "guidance"; padding: 12px 12px 8px; }
+  .panel.assistant { position: static; height: calc(100vh - 24px); min-height: 420px; }
 }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; min-height: 0; }
 .eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-footer { position: fixed; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--muted); pointer-events: none; }
+footer { flex: none; padding: 2px 12px 8px; text-align: center; font-size: 12px; color: var(--muted); }
 
 /* ---- Banner: internet lost / back --------------------------------------------------------------- */
 .banner {
