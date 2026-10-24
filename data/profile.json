@@ -1,5 +1,5 @@
 {
-  "$comment": "The household profile, as if collected at sign-up. FICTIONAL demo household: no real people. Read by src/profile.ts and added to every prompt, so keep it short. Phone numbers here are allowed in answers (the answer check accepts them).",
+  "$comment": "The household profile, as if collected at sign-up. FICTIONAL demo household: no real people. Read by src/profile.ts and added to every prompt, so keep it short. Phone numbers here are allowed in answers (the answer check accepts them). plan.supportContact is also shown, read-only, on the app's screen.",
   "householdSize": 3,
   "location": { "city": "San José", "county": "Santa Clara County", "state": "CA", "zip": "95125" },
   "home": {
@@ -38,7 +38,7 @@
   "animals": [{ "name": "Biscuit", "type": "dog", "notes": "crate-trained, needs a leash" }],
   "plan": {
     "meetingPoints": ["Primary: Willow Glen Branch Library parking lot", "Backup: Lincoln High School front entrance"],
-    "outOfAreaContact": "Aunt Rosa in Sacramento, 555-0142",
+    "supportContact": { "name": "Aunt Rosa", "relation": "aunt", "city": "Sacramento", "phone": "555-0142" },
     "transport": "one car (Sam drives)"
   }
 }

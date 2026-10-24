@@ -41,7 +41,7 @@ Proposed renderer inputs: hazard, stage, playing, plus optional validated visual
 - [Adobe animation principles](https://www.adobe.com/creativecloud/animation/discover/principles-of-animation.html): staging, key poses, slow-in/slow-out, and overlapping motion. Appeal belongs to the illustration; the emergency is not a game.
 - [GSAP easing](https://gsap.com/resources/getting-started/Easing/): use sine easing for gentle periodic motion and linear movement for falling rain.
 
-Review page: /animation-studio. Existing dashboard: /.
+Review page: /animation-studio. The companion screen (/companion) embeds it.
 
 ## Wildfire storyboard iteration
 

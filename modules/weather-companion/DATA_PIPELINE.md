@@ -6,13 +6,13 @@ Implemented scope: five synthetic sources feeding the animation studio through a
 
 `SourceAdapter.read → BatchSchema + RecordSchema → processor → EventContextSchema → /v2/context → scene / weather:context event / AI harness`
 
-The original `/v1/*` flood API remains compatible. The main dashboard still displays its v1 flood metrics. Its embedded scene also consumes v2 context. The v2 flood adapter reuses the original weather observations/forecasts and current river values so shared metrics remain consistent. Additional historical river values are synthetic.
+The v2 flood adapter reuses the original flood model (`src/scenario.ts`) for weather observations/forecasts and river values so shared metrics stay consistent. Additional historical river values are synthetic. (The original `/v1/*` flood API and its dashboard were removed when the desktop app moved to `/companion`.)
 
 ## Endpoint and clock
 
 `GET /v2/context?hazard=fire&seconds=200`
 
-Hazards: `flood`, `fire`, `earthquake`, `outage`, `heat`. Seconds: 0–300. Omit seconds to use the existing server demo clock. Stage boundaries are 100 and 200 seconds. Twelve simulated hours span five minutes, starting January 15, 2026 at midnight PST. Standalone studio playback advances its own scenario seconds; pause freezes it and replay returns to the selected stage's start. The UI polls every two seconds without restarting animations on unchanged stages. A failed or invalid context hides the scene and displays unavailable, not steady.
+Hazards: `flood`, `fire`, `earthquake`, `outage`, `heat`. Seconds: 0–300. Omit seconds to use the feed's current position in the event stage. Stage boundaries are 100 and 200 seconds. Twelve simulated hours span five minutes, starting January 15, 2026 at midnight PST. Standalone studio playback advances its own scenario seconds; pause freezes it and replay returns to the selected stage's start. The UI polls every two seconds without restarting animations on unchanged stages. A failed or invalid context hides the scene and displays unavailable, not steady.
 
 ## Streams
 
@@ -77,49 +77,50 @@ Tests cover five hazards at stage boundaries, deterministic replay, evidence lin
 - `public/studio.js`: polling, scene consumption and browser handoff event.
 - `samples/v2`: 15 sample packets plus exported JSON Schema.
 
-## Companion interface
+## Companion screen (desktop app)
 
-`/companion` implements the window → microphone → conversation layout with the existing scene renderer. The parent page fetches v2 context once per second and supplies that same packet to the embedded scene through a same-origin `weather-context` message. The embedded scene performs no duplicate polling in this mode. Playback defaults to 5× (one-minute walkthrough); 1× is the five-minute scenario. Controls include all five hazards, stage jumps, pause and restart.
+`/companion` is the app's only screen. It opens on the active emergency for `AGENT_SCENARIO` (always the event stage; no clock or playback) with a full-window alert, then shows: the emergency card (Live/Offline chip, readings, animated window), the assistant (full conversation, Help me now prompts, microphone, message box), the support contact (read-only from `data/profile.json`) and the scenario's official action card (verbatim official sentences from `data/cards/library-cards.json`, available without any model).
 
-The displayed assistant summary is a deterministic template of the packet's stage and readings, explicitly labeled as a demo summary. It is not a model response. Voice remains disabled pending connection. On message submission, `assistant:message` emits `{id,text,context}` in the companion page. The harness can use `window.emergencyHarness.getContext()` and supply text through `window.emergencyHarness.receiveReply(text)`. Both messages and replies are rendered as text, not HTML. No server transmission or durable message storage is implemented.
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/setup` | Scenario, online model setting, support contact, official card as steps, four prompts (`src/setup.ts`) |
+| `GET /api/status` | `{internet, simulatedOffline, online, checkedAt, localReady}` (`src/connectivity.ts`) |
+| `GET /api/feed` | `{packet, receivedAt}` while online; `503 {offline: true}` while offline (`src/feed.ts`) |
+| `GET /api/feed?saved=1` | The packet regardless of connectivity: what the app shows if it starts without internet |
+| `POST /api/simulate-offline` | `{offline: boolean}`: the hidden presenter key (Ctrl+Shift+O) |
+| `POST /api/chat` | `{text, mode, context, history}` -> `{answer, provider, model, fallback}` |
+| `POST /api/transcribe` | Raw 16 kHz mono float32 samples (max 30 s) -> `{text}` |
+| `GET /v2/context` | Any hazard at any demo second (tests, debugging) |
 
+### Online and offline
 
-### Offline assistance transition
-The companion listens for browser online/offline events and provides **Simulate offline / Restore connection** in Demo controls. Offline mode stops context polling and freezes the illustrated scenario, retaining the last packet in memory with an explicit saved-data label. Restoring connectivity fetches context again. Feed errors alone do not imply loss of internet connectivity.
+Connectivity is decided on the server: a HEAD request to the online model's server every 3 seconds (2 failures = offline, 1 success = online) plus the simulate-offline flag. The page combines that with `navigator.onLine` for an instant reaction when Wi-Fi is switched off.
 
-The browser emits `assistant:mode` with `{mode, reason, context, contextFreshness, receivedAt, localReady}`. The same envelope is included as `assistance` on `assistant:message`. Integrations can read `window.emergencyHarness.getMode()` on attachment and acknowledge actual local model availability with `setLocalReady(true)` (or false on disconnect). The UI displays a waiting state until acknowledged; no model is started by this interface.
-
-This supports switching an already loaded page. It does not yet cache the application for offline reload, persist weather context across reloads, or deliver messages to a model without the harness integration. Browser online status is a connectivity hint, not verification of upstream internet reachability.
+- The feed (`src/feed.ts`) plays the event stage forward one simulated hour every 30 seconds, then holds (the flood's creek rises from 3.4 m to 4.2 m). It delivers packets only while online, so cutting the internet really stops updates. The page keeps the last packet and shows how old it is.
+- Going offline: banner, grey card with "last update", frozen and dimmed scene, model badge "On this laptop", and a short note in the conversation. Coming back: "Back online. Updates resumed." and a fresh packet.
 
 ### Companion chat (shared agent)
-`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, timing?, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history and rejects foreign browser origins. The response is `{answer, provider, model, contextFreshness}`: the answer only, with citation tags removed.
 
-`src/chat.ts` hands the question to the shared agent, `ask()` in the repo's `src/agent.ts`, so the companion answers exactly like the desktop app: meaning search over the 2,140-passage library (`data/library/`), action cards on danger words, the household profile, and the medical limit. The companion adds its conversation style (one manageable step at a time), the simulated weather context and the device timing as a "current situation" block, and the scenario's hazard as a search hint. Sources, danger rules and flags are logged in `logs/turns-<date>.jsonl`, not returned.
-
-Model choice: `AGENT_PROVIDER` (`local` or `openrouter`) is used while the page is online. When the page is offline (really, or "Simulate offline"), the answer comes from the local model (`LOCAL_BASE_URL`, default `http://127.0.0.1:8080/v1`). There is no cloud fallback offline. The OpenRouter key exists only in the server environment (`OPENROUTER_API_KEY`). No tools or autonomous actions are enabled.
+`src/chat.ts` hands each question to `ask()` in the repo's `src/agent.ts` (meaning search over the 2,140-passage library, action cards on danger words, household profile, medical limit) and adds the companion's conversation style and the emergency packet as a "current situation" block, marked as possibly out of date when offline. Model choice: offline (server or page) always uses the local model; online uses `AGENT_PROVIDER`, and if that call fails or takes longer than 15 seconds the question is answered by the local model (`fallback: true`). The server keeps the local model loaded (`warmLocal()`). The OpenRouter key exists only in the server environment. No tools or autonomous actions are enabled.
 
 ```mermaid
 flowchart TD
   S[Simulated providers / future real adapters] --> P[Zod validation and context processor]
-  P -->|GET /v2/context| U[Companion UI]
-  U -->|same-origin postMessage| V[Animated scene]
-  U -->|POST /api/chat: text, history, context, mode| B[Local server bridge]
-  C[Official guidance cards] --> B
-  B -->|connected / server-side key| O[OpenRouter Gemma]
-  B -->|offline / no cloud fallback| L[Local model server]
-  O --> B
-  L --> B
-  B -->|answer, sources, provider| U
+  N[Connectivity probe] --> F[Feed: only while online]
+  P --> F
+  F -->|GET /api/feed| U[Companion screen]
+  U -->|same-origin postMessage| V[Animated window]
+  U -->|POST /api/chat| B[chat.ts]
+  N --> B
+  B -->|online| O[OpenRouter]
+  B -->|offline, or online call failed| L[Local model server]
+  U -->|POST /api/transcribe| W[Whisper on the laptop]
 ```
 
-### Time, dictation, and retrieval
-The browser now sends optional `timing`: device wall time, context receipt time, monotonic context age, session elapsed seconds, and offline elapsed seconds. Elapsed time uses `performance.now()` without network calls; it is session-only and is not a trusted clock or guaranteed to include system sleep. Scenario `asOf` remains separate from real device time.
+### Dictation
 
-The most recent assistant reply stays visible above an expandable Previous messages history. Browser SpeechRecognition fills the composer for review before Send. Online recognition may use the browser vendor's service. Offline recognition requires `processLocally`; unsupported or missing language packs produce a visible error instead of a cloud fallback. Actual microphone capture must be tested on the target browser/device.
+The microphone button records at 16 kHz (Web Audio) and posts the samples to `/api/transcribe`; Whisper base.en runs on the laptop in a short-lived process (`src/transcribe.ts` in the repo root), and the words go into the message box to be checked before sending. Silence (which macOS sends when the app has no microphone permission) is reported instead of transcribed. Browser speech recognition is not used: in Electron it always fails, because it depends on Google's servers.
 
-Retrieval searches the shipped guidance cards and, when supplied, `data/library/passages.jsonl` using local keyword matching (top five cards plus top five passages). The passage file is not present yet. This is not semantic/vector retrieval; the root agent's embedding pipeline remains separate. The request includes retrieval method and passage count in the response for inspection.
+### Support contact and calls
 
-### Emergency assistance and shipped library
-Merged Dom's shipped 2,140-passage library and vector index from main. The companion currently uses local keyword retrieval, with title/heading boosts; the vector index is available for subsequent semantic retrieval integration. `GET /api/pack?q=...` exposes source-backed card and passage results without invoking a model. The UI provides Help me now, follow-up actions, and direct pack browsing. These actions do not dispatch assistance or certify safety.
-
-The optional support contact is stored only in this origin's localStorage, removable from the UI, and excluded from model prompts. The call link invokes the device's calling handler; it does not confirm contact or delivery. Pack browsing requires the local server running but no external internet. Speech/browser offline reload limitations remain as documented above.
+The contact comes from the profile and is read-only. Its Call link opens the computer's calling app; nothing is dialled automatically. 911 is shown as text, never as a link.
