@@ -22,12 +22,11 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). How the library is built:
 
 ## Quick start
 
-Requirements: Node.js 24+ (runs TypeScript directly).
+Requirements: Node.js 24+ (runs TypeScript directly). The library (`data/library/`, 2,140 official passages) is in the repo. The first start downloads the small embedding model (~130 MB) into `data/models/`; after that everything runs offline. To rebuild the library from new sources, see docs/KNOWLEDGE.md.
 
 ```sh
 npm ci
 cp .env.example .env                       # add OPENROUTER_API_KEY to use OpenRouter
-npm run embed -- path/to/passages.jsonl    # once: builds data/library/ (downloads a ~130 MB model the first time)
 npm run app                                # desktop window (Electron)
 npm run chat -- --provider openrouter      # terminal chat; or --provider local
 npm run bench -- --provider openrouter     # 50 evaluation questions
