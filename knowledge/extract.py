@@ -2,7 +2,7 @@
 extract.py: split captured pages into short, citable passages and tag them with topics.
 
 WHERE THIS FITS
-  Step 2 of the knowledge pipeline:  collect.py -> extract.py -> build_pack.py -> serve.py
+  Step 2 of the knowledge pipeline:  collect.py -> extract.py -> (npm run embed, and build_pack.py)
   Input:  <corpus>/raw/*/*/meta.json + page.md / document.md   (written by collect.py)
   Output: <corpus>/passages.jsonl   one passage per line (the unit the agent retrieves and cites)
           <corpus>/COVERAGE.md      the topic grid: how many passages cover each hazard, need and phase

@@ -1,63 +1,53 @@
 # offline-emergency-agent
 
-An offline emergency response assistant. A small on-device language model answers from a localized, source-backed knowledge pack, so people get specific guidance when power and communications are down.
+An offline emergency response assistant. A language model on the laptop answers from a library of official emergency guidance (FEMA, CDC, NWS, FDA, Cal OES and others), cites its sources, and works with no internet.
 
 Built for SpartHill Hacks 2026 (AI for Sustainable Impact).
 
-> **Status: early prototype.** The cards in `data/demo/` are placeholders. The official library (see [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md)) holds word-for-word guidance from federal and California agencies, but the action cards drafted from it are not yet reviewed. This is not an emergency service.
+> **Status: prototype.** The library holds word-for-word official guidance, but the action cards drafted from it are not yet reviewed. This is not an emergency service.
 
 ## How it works
 
-Every question goes through six steps:
+One TypeScript program. For each question (`src/agent.ts`):
 
-1. **Safety router (plain rules).** Danger words such as rising water, gas or fire pin the matching "immediate action" cards.
-2. **Knowledge search.** Picks the most relevant cards, or passages from the official library through a local [Cognee](https://github.com/topoteretes/cognee) pack.
-3. **Prompt assembly.** Combines rules, household profile, cards and question.
-4. **Model call** via the [OpenAI Agents SDK](https://github.com/openai/openai-agents-js), to any OpenAI-compatible endpoint (a local model server, or OpenRouter).
-5. **Grounding check.** Flags answers that cite no card, or that contain numbers or doses not found in the cards.
-6. **Local audit log.** One JSON line per question in `logs/`. Tracing is local only.
+1. **Follow-ups:** a short follow-up ("What about the dog?") is searched together with the previous question.
+2. **Danger rules:** words like "flooding" or "smell gas" force that danger's action card into the answer.
+3. **Search:** the 5 library passages closest in meaning, found on-device (`src/search.ts`).
+4. **Prompt:** rules and household profile, then cards, passages and the question.
+5. **Model call:** [OpenAI Agents SDK](https://github.com/openai/openai-agents-js) to a local model server or OpenRouter.
+6. **Answer check:** flags missing citations and phone numbers or doses not found in the sources.
+7. **Log:** one JSON line per question in `logs/`, including the full prompt.
 
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). How the library is built: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md).
 
 ## Quick start
 
-Requirements: Node.js 24+ (runs TypeScript directly) and an OpenAI-compatible model endpoint.
+Requirements: Node.js 24+ (runs TypeScript directly).
 
 ```sh
 npm ci
-cp .env.example .env        # add OPENROUTER_API_KEY to use OpenRouter
-npm run chat                # terminal chat, local provider by default
-npm run chat -- --provider openrouter --model gemma-26b
-npm run serve               # HTTP API on 127.0.0.1:8787 (POST /api/ask)
-npm run typecheck
+cp .env.example .env                       # add OPENROUTER_API_KEY to use OpenRouter
+npm run embed -- path/to/passages.jsonl    # once: builds data/library/ (downloads a ~130 MB model the first time)
+npm run chat -- --provider openrouter      # or --provider local
+npm run bench -- --provider openrouter     # 50 evaluation questions
 ```
 
-### Local models
+### Local model
 
-The `local` provider expects an OpenAI-compatible server at `http://127.0.0.1:8080/v1`. Override it with `LOCAL_BASE_URL`. [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` in router mode works well. `config/llama-server.example.ini` is a preset for the models below:
+`--provider local` expects an OpenAI-compatible server at `http://127.0.0.1:8080/v1` serving a model named `gemma4-26b-a4b` (change with `LOCAL_BASE_URL` and `--model`). [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` works well; `config/llama-server.example.ini` is a preset:
 
 ```sh
 llama-server --models-preset config/llama-server.example.ini --models-max 1
 ```
 
-### Official library (Cognee)
+## Configuration (`.env`)
 
-The library is built once while online and searched offline by a small Python service. Full steps: [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md).
-
-```sh
-npm run knowledge                                   # search service, 127.0.0.1:8788
-KNOWLEDGE_BACKEND=cognee npm run chat -- --provider openrouter
-```
-
-## Configuration
-
-| File | Purpose |
+| Variable | Used for |
 | --- | --- |
-| `config/models.json` | Logical model names (`gemma-26b`, `gpt-oss-20b`, `granite-8b`) mapped to each provider's model ID. The code only uses logical names. |
-| `config/llama-server.example.ini` | Example llama-server preset with per-model settings (e.g. turning reasoning off) |
-| `.env` (from `.env.example`, git-ignored) | API keys, endpoint overrides, knowledge backend and build settings |
-| `knowledge/sources.json` | Allowlisted official publishers and crawl rules |
-| `knowledge/topics.json` | Topic grid (hazards, needs, phases) used to tag passages |
+| `OPENROUTER_API_KEY` | `--provider openrouter` |
+| `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
+| `CORPUS_DIR` | `npm run embed` default input, and the Python library tools |
+| `BUILD_LLM_*` | Python library tools only (see docs/KNOWLEDGE.md) |
 
 ## License
 

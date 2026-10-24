@@ -3,7 +3,7 @@ draft_cards.py: draft short life-safety ACTION CARDS from the library, for a per
 
 WHERE THIS FITS
   Runs after extract.py, at build time (online). Output feeds the agent's safety router:
-  data/cards/library-cards.json  ->  src/core/knowledge-cognee.ts (pinned when a danger is detected)
+  data/cards/library-cards.json  ->  src/agent.ts (forced in when a danger rule matches)
 
 WHY CARDS EXIST NEXT TO THE LIBRARY
   The library answers almost anything, but in the first seconds of a flood, fire, gas leak, earthquake,

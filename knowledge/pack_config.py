@@ -2,7 +2,8 @@
 pack_config.py: one place that configures Cognee for this project, for both building and serving.
 
 WHERE THIS FITS
-  Imported first by build_pack.py (online, build time) and serve.py (offline, every question).
+  Imported first by build_pack.py and review_conflicts.py (online, build time). The app itself does
+  not use Cognee; "serve" mode is kept for opening a pack offline to inspect it.
   Cognee reads its settings from environment variables when it is imported, so configure() MUST run
   before `import cognee`.
 
