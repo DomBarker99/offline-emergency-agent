@@ -2,7 +2,7 @@
 build_pack.py: turn the tagged passages into a static Cognee knowledge pack (ONLINE, build time).
 
 WHERE THIS FITS
-  Step 3 of the knowledge pipeline:  collect.py -> extract.py -> build_pack.py -> serve.py
+  Step 3 of the knowledge pipeline:  collect.py -> extract.py -> build_pack.py -> review_conflicts.py
   Input:  <corpus>/passages.jsonl
   Output: <pack-dir>/ (Cognee's databases: SQLite metadata, LanceDB vectors, Ladybug graph)
           <pack-dir>/passages.jsonl  a frozen copy of the passages the pack was built from
@@ -106,7 +106,7 @@ async def build(args) -> dict:
         info["timings"]["conflict_review_s"] = round(time.time() - t, 1)
         print(f"conflict review done in {info['timings']['conflict_review_s']} s", flush=True)
 
-    # Freeze the passages this pack was built from, so serve.py returns exactly these texts.
+    # Freeze the passages this pack was built from (a record of exactly what the graph was built on).
     with open(Path(args.pack) / "passages.jsonl", "w") as f:
         for p in passages:
             f.write(json.dumps(p) + "\n")

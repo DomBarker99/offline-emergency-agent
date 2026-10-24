@@ -1,0 +1,44 @@
+{
+  "$comment": "The household profile, as if collected at sign-up. FICTIONAL demo household: no real people. Read by src/profile.ts and added to every prompt, so keep it short. Phone numbers here are allowed in answers (the answer check accepts them).",
+  "householdSize": 3,
+  "location": { "city": "San José", "county": "Santa Clara County", "state": "CA", "zip": "95125" },
+  "home": {
+    "type": "ground-floor apartment",
+    "nearbyHazards": ["Los Gatos Creek one block away (flood risk)", "Hayward and San Andreas faults in the region (earthquake risk)"]
+  },
+  "people": [
+    {
+      "name": "Maria",
+      "ageGroup": "older adult (72)",
+      "languages": ["Spanish", "English"],
+      "conditions": ["type 2 diabetes"],
+      "medications": [{ "name": "insulin", "refrigerated": true }],
+      "devices": [],
+      "access": ["walks with a cane; slow on stairs"]
+    },
+    {
+      "name": "Sam",
+      "ageGroup": "adult (38)",
+      "languages": ["English"],
+      "conditions": ["asthma"],
+      "medications": [{ "name": "albuterol inhaler", "refrigerated": false }],
+      "devices": [],
+      "access": []
+    },
+    {
+      "name": "Lily",
+      "ageGroup": "child (8)",
+      "languages": ["English"],
+      "conditions": [],
+      "medications": [],
+      "devices": [],
+      "access": []
+    }
+  ],
+  "animals": [{ "name": "Biscuit", "type": "dog", "notes": "crate-trained, needs a leash" }],
+  "plan": {
+    "meetingPoints": ["Primary: Willow Glen Branch Library parking lot", "Backup: Lincoln High School front entrance"],
+    "outOfAreaContact": "Aunt Rosa in Sacramento, 555-0142",
+    "transport": "one car (Sam drives)"
+  }
+}

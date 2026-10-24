@@ -2,7 +2,7 @@
 review_conflicts.py: find places where official sources disagree (ONLINE, build time, after build_pack.py).
 
 WHERE THIS FITS
-  Part of building a pack:  build_pack.py -> review_conflicts.py -> (pack is frozen) -> serve.py
+  Part of building a pack:  build_pack.py -> review_conflicts.py -> CONFLICTS.md (for people to review)
   It uses Cognee's conflict review (improve(review_conflicts=True) under the hood) with the build model.
 
 WHAT IT DOES

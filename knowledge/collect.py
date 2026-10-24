@@ -3,7 +3,7 @@ collect.py: capture official emergency-guidance pages into the raw library.
 
 WHERE THIS FITS
   Step 1 of the knowledge pipeline (see docs/KNOWLEDGE.md):
-    collect.py  ->  extract.py  ->  build_pack.py  ->  serve.py (read-only, used by the chat agent)
+    collect.py  ->  extract.py  ->  (npm run embed, for the app)  and  build_pack.py -> review_conflicts.py
   This script only captures. It never edits or summarizes what a publisher wrote.
 
 WHAT IT PRODUCES (one folder per page, under <corpus>/raw/<source-id>/<slug>/)

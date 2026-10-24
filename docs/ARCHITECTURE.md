@@ -3,73 +3,48 @@
 ## Overview
 
 ```
-   ┌──────────── interfaces ─────────────┐
-   │ terminal chat        HTTP API        │
-   │ src/cli/chat.ts      src/server/     │
-   └───────┬──────────────────┬───────────┘
-           │ direct call      │ POST /api/ask
-           ▼                  ▼
-   ┌──────────────────────────────────────────────────┐
-   │ src/core/   agent logic (no UI, no HTTP)          │
-   │   agent.ts  ask(): the single entry point         │
-   │   safety.ts → knowledge.ts → prompt.ts → models.ts│
-   │   audit.ts  local logs                            │
-   └──────────────────────┬───────────────────────────┘
-                          │ OpenAI-compatible Chat Completions
-           ┌──────────────┴──────────────┐
-           ▼                             ▼
-   local model server              OpenRouter
-   (e.g. llama.cpp llama-server)   (cloud)
+ npm run app  ──► app/main.ts (Electron) ─┐
+ npm run chat ──► src/chat.ts ────────────┴─► ask() in src/agent.ts ──► one Chat Completions call
+                                     │                        ├─ local llama-server (127.0.0.1:8080)
+                                     │                        └─ OpenRouter
+                                     ├─ src/search.ts   embeddings + cosine search over data/library/
+                                     ├─ data/cards/     action cards (pinned by danger rules)
+                                     └─ src/profile.ts  household profile (data/profile.json)
 ```
 
-All agent logic lives in `src/core/` behind one function, `ask()`. Interfaces only collect input, call `ask()` (directly or over HTTP) and render the result. A browser or desktop UI would use the same HTTP API.
+One process, one language. No servers of its own: the only network call is to the model.
 
-## Request flow
+The desktop app runs `ask()` inside Electron's main process. The window (`app/index.html`, `app/renderer.js`) reaches it only through `window.agent.ask(question, history)` and `window.agent.info()`, exposed by `app/preload.cjs`, with context isolation and sandbox on. The model is fixed for the run by `AGENT_PROVIDER`. The window receives **only the answer text, with citation tags removed** (`stripCitations()` in `src/agent.ts`). Sources, danger rules, flags and timings stay in the main process and the log. The window is a stand-in for the real frontend: a replacement only needs to call those two functions.
 
-`ask()` in `src/core/agent.ts`:
+## Per question (`ask()` in `src/agent.ts`)
 
-| Step | File | What it does | AI? |
-| --- | --- | --- | --- |
-| 1. Safety router | `safety.ts` | Detects danger words (rising water, gas, fire, fuel-burning appliances indoors, earthquake, heat illness) and pins that scenario's `immediate` cards | No |
-| 2. Knowledge search | `knowledge.ts`, `knowledge-cognee.ts`, `stores.ts` | Returns pinned cards, then the best-matching cards or library passages (up to 5). Short follow-ups are searched together with the previous question. | No |
-| 3. Prompt assembly | `prompt.ts` | Instructions (rules + household profile) and message (cards + situation + question) | No |
-| 4. Model call | `models.ts`, Agents SDK | Runs the agent on the provider and model chosen in `config/models.json` | Yes |
-| 5. Grounding check | `safety.ts` (output guardrail) | Flags missing or unknown citations, phone numbers and doses not present in the cards. Flags are returned, never hidden. | No |
-| 6. Audit | `audit.ts` | Appends to `logs/turns-*.jsonl`. SDK trace spans go to `logs/trace-*.jsonl`. The default remote trace exporter is replaced. | No |
+| Step | What happens | AI? |
+| --- | --- | --- |
+| 1. Search text | Short follow-ups are searched together with the previous user question | No |
+| 2. Danger rules | Regular expressions (flood, gas, fire, carbon monoxide, earthquake, heat illness) pick action cards to force in | No |
+| 3. Search | The question is embedded (bge-small, on CPU) and compared with every passage; top 5 | No (a small embedding model, not a language model) |
+| 4. Prompt | System: rules + household profile. User: earlier turns as text, then `Cards: [C..] … [L1] heading (publisher, updated date): text …`, a one-line medical reminder, and `Question: …`. **Medical limit:** for medicines and devices the agent passes on handling guidance only (storage, temperature limits, how long they last, when to replace); for symptoms, injuries or treatment it refers to 911, a pharmacist or a doctor. No diagnoses, first aid, doses, or advice on whether to use a medicine. | No |
+| 5. Model call | OpenAI Agents SDK `Agent` + `Runner`, temperature 0.2, max 600 tokens. SDK tracing is off. | **Yes** |
+| 6. Answer check | Flags: no citation, citing something not shown, phone numbers or doses not in the sources. Flags are reported, never hidden, and never block the answer. | No |
+| 7. Log | `logs/turns-<date>.jsonl`: question, search text, dangers, sources, flags, answer (with citation tags), timings and the full user message | No |
+| Shown | The chat (app and terminal) shows only the answer, citation tags removed. Earlier turns are kept as that plain text, so old sources are never sent again. | No |
 
-## Memory
-
-| Kind | Contents | Current implementation | Planned |
-| --- | --- | --- | --- |
-| Knowledge | Official library passages and action cards | `KNOWLEDGE_BACKEND=cognee`: a static Cognee pack searched by `knowledge/serve.py` (see [KNOWLEDGE.md](KNOWLEDGE.md)). `KNOWLEDGE_BACKEND=demo` (default): `data/demo/cards.json` with keyword ranking. Both sit behind the `KnowledgeStore` interface. | County and city sources, other languages |
-| Profile | Household facts, medications, meeting points | `data/demo/profile.json`, included in every prompt | Editable in the app, stored locally |
-| Situation and conversation | Current situation notes, prior turns | Sent by the interface with each request | Situation panel in the UI |
-
-The demo keyword search has no notion of meaning. The Cognee backend adds meaning (vector) search and graph search, and both backends search short follow-ups ("what about the dog?") together with the previous question.
-
-## Interfaces
-
-- **Terminal chat** (`npm run chat`) calls `ask()` in-process. Commands: `/cards`, `/situation <text>`, `/model <name>`, `/provider <local|openrouter>`, `/clear`, `/quit`.
-- **HTTP API** (`npm run serve`) binds to `127.0.0.1:8787`:
-  - `GET /api/health`
-  - `GET /api/models`
-  - `POST /api/ask` with `{ question, history?, situation?, provider?, model? }`
-- **Graphical UI:** not built yet. Any web UI (in a browser, or wrapped in a desktop shell) would call the HTTP API.
-
-## Layout
+## Files
 
 ```
-config/models.json               logical model names → provider model IDs
-config/llama-server.example.ini  example local model server preset
-data/demo/                       placeholder cards and profile
-data/cards/                      action cards drafted from the library (reviewed by a person)
-data/eval/                       benchmark questions
-data/pack/                       built knowledge packs (git-ignored)
-knowledge/                       Python: collect, extract, build the pack, search service (see KNOWLEDGE.md)
-docs/                            documentation
-src/core/                        agent logic
-src/cli/chat.ts                  terminal chat
-src/server/http.ts               local HTTP API
-src/dev/                         provider smoke test (npm run smoke), benchmark (npm run bench)
-logs/                            audit logs (git-ignored)
+app/               desktop app: main.ts (Electron main process), preload.cjs (bridge), index.html + renderer.js (window)
+src/agent.ts       ask(): everything above, plus providers, rules and the system prompt
+src/search.ts      embedding model + library search
+src/profile.ts     loads data/profile.json and turns it into the prompt's profile lines
+src/chat.ts        terminal chat (/sources for debugging, /clear, /quit)
+src/embed.ts       one-time: passages.jsonl → data/library/ (passages + vectors)
+src/bench.ts       benchmark on data/eval/questions.json
+data/cards/        action cards drafted from the library (reviewed by a person)
+data/eval/         benchmark questions
+data/profile.json  household profile, fixed for now (fictional demo household)
+data/library/      runtime library (git-ignored, built by npm run embed)
+data/models/       embedding model files (git-ignored, downloaded by npm run embed)
+knowledge/         Python tools that collect official pages and build the library (docs/KNOWLEDGE.md)
+config/            example llama-server preset
+logs/              answer logs and benchmark results (git-ignored)
 ```
