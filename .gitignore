@@ -16,6 +16,5 @@ __pycache__/
 # Built knowledge pack (Cognee databases); rebuilt from the corpus, never committed
 data/pack/
 
-# Embedding model files (downloaded once by npm run embed) and the runtime library
+# Embedding model files (too big for git; downloaded on first run into data/models/)
 data/models/
-data/library/
