@@ -3,9 +3,14 @@
  *
  * DESIGN
  * The rest of the app depends only on the `KnowledgeStore` interface below, never on a
- * concrete storage technology. Today the implementation is `DemoKeywordStore` (cards from a
- * JSON file, ranked by shared words). Later it will be a SQLite-backed knowledge pack. Because
- * both implement the same interface, swapping them doesn't touch the agent, server or UI.
+ * concrete storage technology. Two implementations exist:
+ *   - `DemoKeywordStore` (this file): cards from a JSON file, ranked by shared words.
+ *   - `CogneeStore` (knowledge-cognee.ts): the official library, searched through the local
+ *     Cognee pack service, plus action cards.
+ * Pick one with KNOWLEDGE_BACKEND (see stores.ts). Swapping doesn't touch the agent, server or UI.
+ *
+ * `search()` returns a Promise because a store may need to ask another local process
+ * (the Cognee service); callers `await` it.
  *
  * Step 2 of the request flow (see agent.ts).
  */
@@ -35,7 +40,9 @@ export interface SearchHit {
 /** What any knowledge backend must provide. */
 export interface KnowledgeStore {
   /** Most relevant cards for a question, pinned cards first. */
-  search(query: string, opts: SearchOptions): SearchHit[];
+  search(query: string, opts: SearchOptions): Promise<SearchHit[]>;
+  /** One line describing the store, shown at startup (e.g. "demo cards: 6"). */
+  describe(): string;
   /** One card by ID, or undefined if it doesn't exist. */
   get(id: string): Card | undefined;
   /** Every card (the safety router uses this to find "immediate" cards for a scenario). */
@@ -90,7 +97,12 @@ export class DemoKeywordStore implements KnowledgeStore {
     return [...this.cards];
   }
 
-  search(query: string, opts: SearchOptions): SearchHit[] {
+  describe(): string {
+    return `keyword search over ${this.cards.length} cards`;
+  }
+
+  // `async` makes this return a Promise, matching the interface; the work itself is synchronous.
+  async search(query: string, opts: SearchOptions): Promise<SearchHit[]> {
     // Words from the question, as a Set for fast "is this word in the question?" checks.
     const questionWords = new Set(tokens(query));
 

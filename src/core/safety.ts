@@ -38,7 +38,7 @@ const DANGER_RULES: DangerRule[] = [
   {
     id: "flood",
     scenario: "flood",
-    pattern: /\b(water (is )?(rising|coming in)|flood(ing|ed)?|swept away)\b/i,
+    pattern: /\b(water (is )?(rising|coming in)|flood(s|ing|ed)?|flash flood|swept away)\b/i,
   },
   {
     id: "gas",
@@ -48,7 +48,8 @@ const DANGER_RULES: DangerRule[] = [
   {
     id: "fire",
     scenario: "fire",
-    pattern: /\b(fire|smoke|burning|incendio|humo)\b/i,
+    // "(wild)?fires?" also matches "wildfire" and "fires".
+    pattern: /\b((wild)?fires?|smoke|smoky|burning|incendio|humo)\b/i,
   },
   {
     // A fuel-burning appliance AND an enclosed place in the same sentence.
@@ -56,6 +57,19 @@ const DANGER_RULES: DangerRule[] = [
     id: "carbon-monoxide",
     scenario: "power-outage",
     pattern: /\b(generator|grill|camp stove|carbon monoxide)\b[^.?!]*\b(inside|indoors|garage|kitchen|house)\b/i,
+  },
+  {
+    // Shaking happening now, or the aftermath where people get hurt (gas, aftershocks).
+    id: "earthquake",
+    scenario: "earthquake",
+    pattern: /\b(earthquakes?|quakes?|shaking|aftershocks?|terremoto|temblor)\b/i,
+  },
+  {
+    // Heat illness signs: these need action now, not a reading list.
+    id: "heat",
+    scenario: "extreme-heat",
+    // Named heat illness, or warning signs (dizzy, confused, fainting, hot dry skin) mentioned with heat.
+    pattern: /\b(heat ?stroke|heat exhaustion|overheat(ing|ed)?|too hot|stopped sweating|golpe de calor)\b|\b(dizzy|confused|faint(ed|ing)?|hot,? (and )?dry skin)\b[^.?!]*\bheat\b|\bheat\b[^.?!]*\b(dizzy|confused|faint(ed|ing)?|hot,? (and )?dry)\b/i,
   },
 ];
 

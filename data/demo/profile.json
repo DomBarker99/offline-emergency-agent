@@ -1,7 +1,14 @@
 {
   "household": "DEMO: 2 adults (Resident A, Resident B), 1 dog",
   "location": "DEMO: ground-floor apartment near a creek",
-  "medications": ["Resident A: daily refrigerated prescription (see card C5)"],
-  "meetingPoints": ["Primary: Demo Community Center parking lot", "Backup: Demo Library"],
-  "notes": ["Out-of-area contact: listed on the paper plan in the go-bag"]
+  "medications": [
+    "Resident A: daily prescription that must stay refrigerated"
+  ],
+  "meetingPoints": [
+    "Primary: Demo Community Center parking lot",
+    "Backup: Demo Library"
+  ],
+  "notes": [
+    "Out-of-area contact: listed on the paper plan in the go-bag"
+  ]
 }

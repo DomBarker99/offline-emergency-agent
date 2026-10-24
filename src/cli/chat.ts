@@ -11,7 +11,7 @@
  *   (the "--" passes the flags through npm to this script)
  *
  * Commands inside the chat:
- *   /cards              show which cards the last answer used (* = pinned by the safety router)
+ *   /cards              show which cards/passages the last answer used (* = pinned by the safety router)
  *   /situation <text>   add a note to the current situation, e.g. "/situation power out since 6pm"
  *   /model <name>       switch logical model (see config/models.json)
  *   /provider <name>    switch provider: local | openrouter
@@ -27,7 +27,7 @@ import { readFileSync } from "node:fs";
 import { ask } from "../core/agent.ts";
 import { logDir } from "../core/audit.ts";
 import { loadModels, type ProviderName } from "../core/config.ts";
-import { loadDemoStore } from "../core/knowledge.ts";
+import { createStore } from "../core/stores.ts";
 import type { AskResponse, Profile, Situation, Turn } from "../core/types.ts";
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,8 @@ function argValue(flag: string): string | undefined {
 let provider = (argValue("--provider") ?? "local") as ProviderName;
 let model = argValue("--model") ?? loadModels().defaultModel;
 
-const store = loadDemoStore();
+// Which knowledge to use comes from KNOWLEDGE_BACKEND (see src/core/stores.ts).
+const store = createStore();
 const profile = JSON.parse(
   readFileSync(new URL("../../data/demo/profile.json", import.meta.url), "utf8"),
 ) as Profile;
@@ -56,7 +57,7 @@ let last: AskResponse | undefined; // most recent answer, for /cards
 
 console.log(
   `Offline emergency agent (dev chat). provider=${provider} model=${model}. ` +
-    `Demo cards: ${store.all().length}. Logs: ${logDir()}`,
+    `Knowledge: ${store.describe()}. Logs: ${logDir()}`,
 );
 console.log("Commands: /model <name> /provider <local|openrouter> /cards /situation <text> /clear /quit\n");
 
@@ -99,7 +100,10 @@ function handleCommand(line: string): "quit" | "continue" {
 
     case "/cards":
       for (const card of last?.cards ?? []) {
-        console.log(`  [${card.id}]${card.pinned ? " (pinned)" : ""} ${card.title} | ${card.source.name}`);
+        // Passages also show their stable library ID (ref) and the page URL, so you can open the source.
+        const ref = card.ref ? ` {${card.ref}}` : "";
+        const url = card.source.url ? ` ${card.source.url}` : "";
+        console.log(`  [${card.id}]${card.pinned ? " (pinned)" : ""} ${card.title} | ${card.source.name}${ref}${url}`);
       }
       break;
 

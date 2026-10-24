@@ -6,7 +6,8 @@
  *
  * REQUEST FLOW (each step lives in its own file):
  *   1. Safety router     safety.ts     danger words pin "immediate" cards           (rules)
- *   2. Knowledge search  knowledge.ts  find the most relevant cards                 (rules)
+ *   2. Knowledge search  knowledge.ts  find the most relevant cards/passages        (search, no AI)
+ *                        (+ knowledge-cognee.ts for the official library)
  *   3. Prompt assembly   prompt.ts     rules + profile + cards + situation + question
  *   4. Model call        models.ts     run the agent via the OpenAI Agents SDK      (AI)
  *   5. Grounding check   safety.ts     output guardrail flags rule-breaking answers (rules)
@@ -21,7 +22,7 @@ import type { KnowledgeStore } from "./knowledge.ts";
 import { createModelHandle } from "./models.ts";
 import { buildInstructions, buildUserMessage, PROMPT_VERSION } from "./prompt.ts";
 import { checkAnswer, routeSafety } from "./safety.ts";
-import type { AskRequest, AskResponse, Profile } from "./types.ts";
+import type { AskRequest, AskResponse, Profile, Turn } from "./types.ts";
 
 /**
  * Data we hand to the SDK for one run (the SDK calls this the run "context").
@@ -33,8 +34,33 @@ interface RunData {
   providedText: string; // the exact user message sent to the model
 }
 
-/** How many cards to include per question (pinned cards may push past this). */
-const MAX_CARDS = 4;
+/**
+ * How many cards/passages to include per question (pinned cards may push past this).
+ * Library passages are longer than demo cards, so the library store gets a few more slots.
+ */
+const MAX_CARDS = Number(process.env.MAX_CARDS ?? 5);
+
+/**
+ * The text used to search the knowledge. Usually just the question. A short follow-up such as
+ * "What about the dog?" has no topic of its own, so the previous user question is added in front
+ * ("My street is flooding, do we leave? What about the dog?"). Only the search uses this; the
+ * model still sees the real question and the conversation history.
+ *
+ * @param question  the new question
+ * @param history   earlier turns, oldest first
+ */
+export function retrievalQuery(question: string, history: Turn[] = []): string {
+  const previous = [...history].reverse().find((t) => t.role === "user");
+  if (!previous) return question;
+  const words = question.trim().split(/\s+/).length;
+  // Signals that the question leans on earlier context: short, or starts like a continuation,
+  // or points back with a pronoun.
+  const followUp =
+    words <= 7 ||
+    /^(and|but|what about|how about|what if|also|then|so|ok|okay|y|and if)\b/i.test(question.trim()) ||
+    /\b(it|that|this|those|they|them|there)\b/i.test(question);
+  return followUp ? `${previous.text} ${question}` : question;
+}
 
 /**
  * Output guardrail (step 5). The SDK runs this on the model's final answer.
@@ -76,13 +102,18 @@ export async function ask(req: AskRequest, deps: AgentDeps): Promise<AskResponse
   const provider = req.provider ?? "local";
   const { runner, model } = createModelHandle(provider, req.model);
 
+  // The question, plus the previous question when this one is a short follow-up (see retrievalQuery).
+  // Both the safety router and the search use it, so "What about the dog?" asked right after
+  // "our street is flooding" still counts as a flood question.
+  const query = retrievalQuery(req.question, req.history);
+
   // ----- Step 1: safety router ---------------------------------------------------
   // e.g. "water is rising" -> dangers ["flood"], pinnedIds ["C1"]
-  const route = routeSafety(req.question, deps.store);
+  const route = routeSafety(query, deps.store);
 
   // ----- Step 2: knowledge search ------------------------------------------------
-  // Pinned cards come first, then the best keyword matches, up to MAX_CARDS.
-  const hits = deps.store.search(req.question, { limit: MAX_CARDS, pinnedIds: route.pinnedIds });
+  // Pinned cards come first, then the best matches, up to MAX_CARDS.
+  const hits = await deps.store.search(query, { limit: MAX_CARDS, pinnedIds: route.pinnedIds });
   const cards = hits.map((hit) => hit.card);
   const tRetrieval = performance.now();
 
@@ -130,10 +161,13 @@ export async function ask(req: AskRequest, deps: AgentDeps): Promise<AskResponse
     answer,
     cards: hits.map((hit) => ({
       id: hit.card.id,
+      ref: hit.card.ref,
+      kind: hit.card.kind ?? "card",
       title: hit.card.title,
       pinned: hit.pinned,
       source: hit.card.source,
     })),
+    retrievalQuery: query,
     dangers: route.dangers,
     flags,
     model: { provider, logical: model.logicalName, id: model.modelId },

@@ -1,0 +1,15 @@
+[project]
+name = "oea-knowledge"
+version = "0.1.0"
+description = "Builds the offline knowledge library and pack (collect, extract, build, serve) for the offline emergency agent."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "playwright>=1.50",
+  "beautifulsoup4>=4.12",
+  "markdownify>=0.13",
+  "pypdf>=5.0",
+  "cognee==1.6.5",
+]
+
+[tool.uv]
+package = false
