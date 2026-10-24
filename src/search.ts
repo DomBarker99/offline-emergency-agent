@@ -6,10 +6,11 @@
  * question is embedded with the same small model, and the passages whose numbers are closest win.
  * "Closest" = cosine similarity: the vectors are normalized, so it's a plain dot product.
  *
- * The model is BAAI/bge-small-en-v1.5 (about 130 MB), run by transformers.js on the CPU. Its files are
- * cached in data/models/ on first download; after that no internet is needed.
+ * The library (data/library/: passages.jsonl + vectors.bin) is in the repo. The model, BAAI/bge-small-en-v1.5
+ * (~130 MB, run by transformers.js on the CPU), is too big for git: it downloads into data/models/ on first
+ * run, and after that no internet is needed.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { env, pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
 
 export const EMBEDDING_MODEL = "Xenova/bge-small-en-v1.5";
@@ -32,9 +33,14 @@ export function embeddingText(p: Passage): string {
   return `${p.pageTitle}\n${p.heading}\n\n${p.text}`;
 }
 
-/** Loads the embedding model. `allowDownload` is only true for `npm run embed`; the app stays offline. */
-export async function loadEmbedder(allowDownload = false): Promise<FeatureExtractionPipeline> {
-  env.allowRemoteModels = allowDownload;
+/**
+ * Loads the embedding model from data/models/. If it isn't there yet (a fresh clone), it is downloaded
+ * once (~130 MB, needs internet) and cached; every later start is offline.
+ */
+export async function loadEmbedder(): Promise<FeatureExtractionPipeline> {
+  const cached = existsSync(new URL(`../data/models/${EMBEDDING_MODEL}/onnx/model.onnx`, import.meta.url));
+  env.allowRemoteModels = !cached;
+  if (!cached) console.log(`Downloading the embedding model ${EMBEDDING_MODEL} (~130 MB, first run only)...`);
   return pipeline("feature-extraction", EMBEDDING_MODEL, { dtype: "fp32" });
 }
 

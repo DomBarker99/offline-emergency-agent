@@ -22,7 +22,7 @@ official websites (Ready.gov, CDC, NWS, FDA, Cal OES, ...)
 
 | Kind | Where | Trusted because | Used how |
 | --- | --- | --- | --- |
-| **Library passages** | `data/library/passages.jsonl` | Only allowlisted official publishers (`knowledge/sources.json`), copied word for word | The 5 closest passages per question, cited as `[L1]`…`[L5]` |
+| **Library passages** | `data/library/passages.jsonl` (committed, with `vectors.bin`) | Only allowlisted official publishers (`knowledge/sources.json`), copied word for word | The 5 closest passages per question, cited as `[L1]`…`[L5]` |
 | **Action cards** | `data/cards/library-cards.json` | Sentences selected from passages, checked word for word by a script, then reviewed by a person (`"reviewed": true`) | Forced in by the danger rules, cited as `[C1]`… |
 
 The household profile (`data/profile.json`, via `src/profile.ts`) is added to every prompt: household size, location, home, each person's emergency-relevant health and access needs, animals, and the household plan. It is fixed for now, as if collected at sign-up.

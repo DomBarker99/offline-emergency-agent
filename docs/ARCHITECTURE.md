@@ -42,8 +42,8 @@ src/bench.ts       benchmark on data/eval/questions.json
 data/cards/        action cards drafted from the library (reviewed by a person)
 data/eval/         benchmark questions
 data/profile.json  household profile, fixed for now (fictional demo household)
-data/library/      runtime library (git-ignored, built by npm run embed)
-data/models/       embedding model files (git-ignored, downloaded by npm run embed)
+data/library/      the library the app searches: passages.jsonl + vectors.bin (committed; rebuilt by npm run embed)
+data/models/       embedding model files (git-ignored: too big for git; downloaded on first start)
 knowledge/         Python tools that collect official pages and build the library (docs/KNOWLEDGE.md)
 config/            example llama-server preset
 logs/              answer logs and benchmark results (git-ignored)
