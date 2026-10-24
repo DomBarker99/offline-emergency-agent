@@ -8,13 +8,15 @@
  *   GET  /api/status             online or offline, and whether the local model is loaded (connectivity.ts)
  *   GET  /api/feed               the latest emergency packet; 503 while offline (feed.ts)
  *   GET  /api/feed?saved=1       the packet even while offline: what the app had saved (first launch offline)
- *   POST /api/simulate-offline   {"offline": true|false}: the hidden presenter key
+ *   POST /api/simulate-offline   {"offline": true|false}: the hidden presenter key (Ctrl+Shift+O)
+ *   POST /api/trigger-emergency  starts the emergency when the app started calm (Ctrl+Shift+E)
  *   POST /api/chat               a question for the assistant (chat.ts -> src/agent.ts)
  *   POST /api/transcribe         a recording (raw 16 kHz float samples) -> {"text"} (src/transcribe.ts)
  *   GET  /v2/context             a scenario packet for any hazard and demo second (tests, debugging)
  *   GET  /health                 liveness, used by app/main.ts to wait for startup
  *
- * Settings come from the environment (app/main.ts loads .env): AGENT_SCENARIO, AGENT_PROVIDER, PORT.
+ * Settings come from the environment (app/main.ts loads .env): AGENT_SCENARIO, AGENT_PROVIDER, PORT, and
+ * AGENT_START (event = the emergency is active at launch, the default; calm = normal until Ctrl+Shift+E).
  * AGENT_WARM_LOCAL=0 skips loading the local model at start (tests).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -35,7 +37,8 @@ const monitor = createConnectivityMonitor({
   probeUrl: process.env.CONNECTIVITY_PROBE_URL,
   intervalMs: Number(process.env.CONNECTIVITY_INTERVAL_MS) || undefined,
 });
-const feed = createFeed(scenario, monitor);
+const startCalm = process.env.AGENT_START === "calm";
+const feed = createFeed(scenario, monitor, Date.now(), startCalm);
 
 // Keep the local model loaded (see warmLocal in src/agent.ts): now, then every 10 minutes. The local
 // model server unloads after 15 idle minutes, so this keeps the first offline answer fast.
@@ -93,7 +96,7 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "GET" && path === "/health") return reply(res, 200, { status: "ok" });
     if (req.method === "GET" && path === "/api/setup") return reply(res, 200, setupFor(scenario, provider));
-    if (req.method === "GET" && path === "/api/status") return reply(res, 200, { ...monitor.state(), localReady });
+    if (req.method === "GET" && path === "/api/status") return reply(res, 200, { ...monitor.state(), localReady, emergency: feed.active() });
 
     if (req.method === "GET" && path === "/api/feed") {
       const saved = url.searchParams.get("saved") === "1";
@@ -125,6 +128,11 @@ const server = createServer(async (req, res) => {
       if (!parsed?.success) return reply(res, 400, { error: 'Expected {"offline": true|false}' });
       monitor.setSimulatedOffline(parsed.data.offline);
       return reply(res, 200, monitor.state());
+    }
+
+    if (path === "/api/trigger-emergency") {
+      feed.trigger();
+      return reply(res, 200, { emergency: true });
     }
 
     if (path === "/api/chat") {
@@ -174,5 +182,5 @@ const port = Number(process.env.PORT ?? 4317);
 server.listen(port, "127.0.0.1", () => {
   const address = server.address();
   const actual = typeof address === "object" && address ? address.port : port;
-  console.log(`Companion server: http://127.0.0.1:${actual}/companion (scenario ${scenario}, online model ${provider}, local model ${setupFor(scenario, provider).localModel})`);
+  console.log(`Companion server: http://127.0.0.1:${actual}/companion (scenario ${scenario}${startCalm ? " (starts calm)" : ""}, online model ${provider}, local model ${setupFor(scenario, provider).localModel})`);
 });

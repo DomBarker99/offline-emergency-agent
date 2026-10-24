@@ -17,6 +17,10 @@
     POST /api/chat     a question -> {answer, provider, fallback}
     POST /api/transcribe  a recording -> {text}
 
+  Calm start (AGENT_START=calm): the card shows normal conditions until Ctrl+Shift+E starts the emergency.
+  Then the full-window alert appears, the card turns red, and the assistant posts the official first steps
+  into the conversation (also into its history, so later answers know the emergency started).
+
   Offline = no network interface (navigator.onLine, instant) OR the server's probe can't reach the
   internet OR "simulate offline" (Ctrl+Shift+O, the hidden presenter key). Any one is enough.
 -->
@@ -103,6 +107,10 @@ footer { flex: none; padding: 2px 12px 8px; text-align: center; font-size: 12px;
 .alert-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .alert-card .eyebrow { color: var(--alert); }
 .alert-card.stale .eyebrow { color: var(--offline); }
+/* Calm (AGENT_START=calm, before Ctrl+Shift+E): green, no alert colours. */
+.alert-card.calm { border-left-color: var(--green); }
+.alert-card.calm .eyebrow { color: var(--green); }
+.alert-card.calm .reading { background: var(--green-soft); }
 .alert-card h1 { font-size: clamp(26px, 2.6vw, 36px); line-height: 1.15; letter-spacing: -.5px; margin: 8px 0 4px; }
 .alert-summary { margin: 0 0 12px; color: var(--muted); }
 .readings { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
@@ -384,15 +392,36 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
     const previous = packet;
     packet = next;
     receivedAt = Date.now();
-    $("alert-title").textContent = next.stage.summary;
-    $("alert-summary").textContent = SUMMARY[next.hazard] || "";
+    const active = next.stage.level === 3;
+    $("alert-card").classList.toggle("calm", !active);
+    $("alert-name").textContent = active ? setup.alertName : "Local conditions";
+    $("alert-title").textContent = active ? next.stage.summary : "All clear";
+    $("alert-summary").textContent = active ? SUMMARY[next.hazard] || "" : "No alerts for your area right now.";
     renderReadings($("readings"), next, previous);
     sendScene();
     const chip = $("status-chip");
     chip.classList.remove("updated");
     void chip.offsetWidth; // restart the "ping" animation
     chip.classList.add("updated");
-    if (!launchShown) showLaunch();
+    if (active && !launchShown) showLaunch();
+    // The emergency started while the app was open (calm start + Ctrl+Shift+E): the assistant speaks up.
+    if (active && previous && previous.stage.level !== 3) announceEmergency();
+  }
+
+  /**
+   * The assistant's message when an emergency starts mid-conversation: what happened, the first steps from
+   * the official card (verbatim), and a question. It goes into the history too, so the model knows the
+   * emergency started and that these first steps were already given.
+   */
+  function announceEmergency() {
+    const steps = (setup.card?.steps || []).slice(0, 2);
+    const text = [
+      `${setup.alertName} for your area: ${packet.stage.summary.toLowerCase()}.`,
+      ...(steps.length ? ["What officials say to do first:", ...steps.map((step, i) => `${i + 1}. ${step}`)] : []),
+      "Where are you right now, and is anyone with you?",
+    ].join("\n");
+    addAnswer(text, "Emergency alert, from the official guidance saved on this laptop.");
+    history.push({ role: "assistant", content: text });
   }
 
   // The animated window is xethrus's animation studio page in an iframe; it listens for this message.
@@ -469,7 +498,7 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
     sendScene();
     if (offline) {
       banner("offline");
-      const name = (setup?.alertName || "emergency").toLowerCase();
+      const name = packet && packet.stage.level !== 3 ? "local conditions" : (setup?.alertName || "emergency").toLowerCase();
       const age = receivedAt ? ago(Date.now() - receivedAt).replace("just now", "a moment ago") : null;
       note(first
         ? "This laptop has no internet right now. I can still help: my answers come from this laptop."
@@ -518,6 +547,17 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
 
   window.addEventListener("online", applyConnectivity);
   window.addEventListener("offline", applyConnectivity);
+
+  // Hidden presenter key: Ctrl+Shift+E starts the emergency (when the app started calm). The feed only
+  // delivers while online, so press it before cutting the internet (like a real alert arriving).
+  document.addEventListener("keydown", async (e) => {
+    if (!(e.ctrlKey && e.shiftKey && e.code === "KeyE")) return;
+    e.preventDefault();
+    try {
+      await postJson("/api/trigger-emergency", {});
+    } catch {}
+    refreshFeed();
+  });
 
   // Hidden presenter key: Ctrl+Shift+O switches "simulate offline" on and off (no Wi-Fi needed).
   document.addEventListener("keydown", async (e) => {
@@ -772,8 +812,10 @@ form:focus-within { border-color: #c99a4a; box-shadow: 0 0 0 3px #c99a4a33; }
       b.onclick = () => send(p);
       return b;
     }));
-    note(`I'm here to help with the ${setup.alertName.toLowerCase()}. Ask me anything, or tap Help me now.`);
     await refreshStatus();
+    note(server.emergency === false
+      ? "I'm here if you need anything. If an emergency starts, you'll see an alert here."
+      : `I'm here to help with the ${setup.alertName.toLowerCase()}. Ask me anything, or tap Help me now.`);
     await refreshFeed();
     setInterval(refreshStatus, 1000);
     setInterval(refreshFeed, 10000);

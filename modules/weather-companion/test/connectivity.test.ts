@@ -46,3 +46,22 @@ test("the feed holds the active emergency, plays the flood forward, and is silen
     monitor.stop();
   }
 });
+
+test("a calm start stays calm until triggered, then plays the emergency from that moment", async () => {
+  const monitor = createConnectivityMonitor({ intervalMs: 60_000, probe: async () => true });
+  const start = Date.parse("2026-10-24T20:00:00Z");
+  try {
+    const feed = createFeed("flood", monitor, start, true);
+    assert.equal(feed.active(), false);
+    assert.equal((await feed.read(start + 10 * 60_000))!.stage.level, 1); // still calm ten minutes later
+    feed.trigger(start + 10 * 60_000);
+    assert.equal(feed.active(), true);
+    assert.equal(feed.demoSeconds(start + 10 * 60_000), 200); // the event starts at its first hour
+    assert.equal((await feed.read(start + 11 * 60_000))!.stage.level, 3);
+    feed.trigger(start + 20 * 60_000); // a second press changes nothing
+    assert.equal(feed.demoSeconds(start + 11 * 60_000), 250);
+  } finally {
+    monitor.stop();
+  }
+});
+

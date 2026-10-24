@@ -38,6 +38,7 @@ It opens on an active emergency (`AGENT_SCENARIO`) with a full-window alert, the
 
 - **Online:** the card says **Live** and updates from the emergency feed; answers come from `AGENT_PROVIDER`.
 - **Offline** (Wi-Fi off, or no internet behind it): within seconds a banner appears, the card turns grey with the time of the last update, the scene freezes and answers come from the local model. If the internet drops while an online answer is on its way, the question is answered locally.
+- **Ctrl+Shift+E** starts the emergency when `AGENT_START=calm` (press it while online: the alert arrives through the feed).
 - **Ctrl+Shift+O** in the window simulates offline (press again to come back), for rehearsals.
 - **Dictation:** the microphone button records, Whisper transcribes on the laptop, and the words appear in the message box to check before sending. macOS asks once for microphone access.
 
@@ -57,6 +58,7 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 | --- | --- |
 | `AGENT_PROVIDER` | `local` (default) or `openrouter`: the model the app uses while online, and the chat's default. Offline is always local. |
 | `AGENT_LOCAL_MODEL` | The local model by its server name: `gemma4-26b-a4b` (default) or `granite4.2-8b` (any name your server's preset defines) |
+| `AGENT_START` | `event` (default): the emergency is active at launch. `calm`: normal conditions until **Ctrl+Shift+E** starts it (alert, red card, and the assistant posts the official first steps) |
 | `AGENT_SCENARIO` | The emergency the app opens on: `flood` (default), `fire`, `earthquake`, `outage`, `heat` |
 | `OPENROUTER_API_KEY` | `openrouter` |
 | `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
