@@ -90,3 +90,24 @@ The companion listens for browser online/offline events and provides **Simulate 
 The browser emits `assistant:mode` with `{mode, reason, context, contextFreshness, receivedAt, localReady}`. The same envelope is included as `assistance` on `assistant:message`. Integrations can read `window.emergencyHarness.getMode()` on attachment and acknowledge actual local model availability with `setLocalReady(true)` (or false on disconnect). The UI displays a waiting state until acknowledged; no model is started by this interface.
 
 This supports switching an already loaded page. It does not yet cache the application for offline reload, persist weather context across reloads, or deliver messages to a model without the harness integration. Browser online status is a connectivity hint, not verification of upstream internet reachability.
+
+### Connected companion chat
+`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history, rejects foreign browser origins, and applies a model timeout. The response is `{answer, provider, model, contextFreshness, sources}`. The API key exists only in the server environment (`OPENROUTER_API_KEY`).
+
+Connected mode uses OpenRouter Gemma; local mode uses `LOCAL_BASE_URL` (default `http://127.0.0.1:8080/v1`) and `LOCAL_MODEL` (default `gemma4-26b-a4b`). There is no cloud fallback in local mode. Errors remain visible, and responses arriving after a mode change are discarded. Browser history is memory-only, capped at 12 turns per request. Connected requests send conversation history and a compact simulated weather summary to OpenRouter.
+
+This is a cards-based demo adapter, not the root agent's retrieval pipeline. It loads the repository's emergency cards; the full root agent additionally requires the missing built passage/vector library and embedding model. No tools or autonomous actions are enabled. Voice remains unconnected. Successful local replies confirm local readiness; switching mode alone does not.
+
+```mermaid
+flowchart TD
+  S[Simulated providers / future real adapters] --> P[Zod validation and context processor]
+  P -->|GET /v2/context| U[Companion UI]
+  U -->|same-origin postMessage| V[Animated scene]
+  U -->|POST /api/chat: text, history, context, mode| B[Local server bridge]
+  C[Official guidance cards] --> B
+  B -->|connected / server-side key| O[OpenRouter Gemma]
+  B -->|offline / no cloud fallback| L[Local model server]
+  O --> B
+  L --> B
+  B -->|answer, sources, provider| U
+```

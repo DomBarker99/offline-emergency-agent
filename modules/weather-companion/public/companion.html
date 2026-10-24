@@ -28,7 +28,7 @@
 <iframe id="scene" src="/animation-studio?embed=external" title="Animated view of simulated local conditions"></iframe>
 <div class="condition"><h1><span class="dot" id="dot"></span><span id="condition">Connecting…</span></h1><p id="subtext">Reading the scenario context.</p></div><p id="error" role="alert" hidden></p>
 </section><section class="assistant-panel" aria-label="Talk with your assistant"><div class="voice"><button class="mic" disabled aria-label="Voice input not connected"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="17" y="5" width="14" height="26" rx="7" fill="currentColor"/><path d="M11 24v2a13 13 0 0026 0v-2M24 39v7" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></button><p>Talk to your assistant</p><span class="muted">Voice connection pending</span></div>
-<section class="chat" aria-label="Assistant conversation"><h2>Your assistant</h2><div class="bubble"><small id="summary-label">DEMO SUMMARY · FROM SCENARIO DATA</small><span id="summary">Waiting for the latest readings.</span></div><div id="messages" aria-live="polite"></div><form id="chat-form"><input id="message" aria-label="Message to your assistant" placeholder="Type a message…" maxlength="2000" required><button aria-label="Send message to connected harness" type="submit">↑</button></form><div id="message-status" role="status">Replies require the local AI harness.</div></section>
+<section class="chat" aria-label="Assistant conversation"><h2>Your assistant</h2><div class="bubble"><small id="summary-label">DEMO SUMMARY · FROM SCENARIO DATA</small><span id="summary">Waiting for the latest readings.</span></div><div id="messages" aria-live="polite"></div><form id="chat-form"><input id="message" aria-label="Message to your assistant" placeholder="Type a message…" maxlength="2000" required><button aria-label="Send message to connected harness" type="submit">↑</button></form><div id="message-status" role="status">Connected chat uses OpenRouter. Offline mode uses the local model.</div></section>
 </section><details id="demo"><summary>Demo controls</summary><label>Scenario<select id="hazard"><option value="flood">Rain & flood</option><option value="fire">Wildfire</option><option value="earthquake">Earthquake</option><option value="outage">Power outage</option><option value="heat">Extreme heat</option></select></label><div class="controls"><button id="play">Pause</button><button id="restart">Restart</button><button id="offline-toggle" aria-pressed="false">Simulate offline</button><button data-stage="0">1 · Steady</button><button data-stage="100">2 · Prepare</button><button data-stage="200">3 · Event</button></div><label>Playback speed<select id="speed"><option value="1">1× · five-minute scenario</option><option value="5" selected>5× · one-minute walkthrough</option></select></label><p class="muted" id="data-status">Connecting</p><details><summary>Harness context</summary><pre id="packet"></pre></details><p class="muted"><a href="/animation-studio">Animation studio</a> · <a href="/">Detailed flood dashboard</a></p></details><footer>Simulated conditions · No real alerts or dispatched assistance</footer>
 </main><script>
 (()=>{
@@ -87,7 +87,24 @@
  let messageNumber=0;
  const append=(text,user=false)=>{const el=document.createElement('div');el.className='bubble'+(user?' user':'');el.textContent=text;$('messages').append(el);el.scrollIntoView({block:'nearest'})};
  window.emergencyHarness={getContext:()=>packet,getMode:mode,setLocalReady(value){if(typeof value!=='boolean')throw Error('Expected boolean');localReady=value;updateConnection();},receiveReply(text){if(typeof text!=='string'||!text.trim()||text.length>10000)throw Error('Invalid reply');append(text);$('message-status').textContent='Reply received from the connected harness.';}};
- $('chat-form').onsubmit=e=>{e.preventDefault();const text=$('message').value.trim();if(!text)return;append(text,true);$('message').value='';window.dispatchEvent(new CustomEvent('assistant:message',{detail:{id:'message-'+(++messageNumber),text,context:packet,assistance:mode()}}));$('message-status').textContent='Message handed to the browser integration. Waiting for a connected harness; no automatic reply is generated.';};
+ const history=[];let chatBusy=false;
+ $('chat-form').onsubmit=async e=>{
+   e.preventDefault();const text=$('message').value.trim();if(!text||chatBusy)return;
+   const requestMode=offline?'local':'connected';chatBusy=true;append(text,true);$('message').value='';
+   const button=$('chat-form').querySelector('button');button.disabled=true;
+   $('message-status').textContent=requestMode==='local'?'Asking the model on this computer…':'Asking Gemma through OpenRouter…';
+   window.dispatchEvent(new CustomEvent('assistant:message',{detail:{id:'message-'+(++messageNumber),text,context:packet,assistance:mode()}}));
+   try{
+     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({text,mode:requestMode,context:packet,history:history.slice(-12)})});
+     const result=await response.json();if(!response.ok)throw Error(result.error||'Assistance unavailable');
+     if(requestMode!==(offline?'local':'connected')){ $('message-status').textContent='Connection mode changed. Please send your message again.';return; }
+     append(result.answer);history.push({role:'user',content:text},{role:'assistant',content:result.answer});
+     if(requestMode==='local'){localReady=true;updateConnection();}
+     $('message-status').textContent='Reply from '+(result.provider==='local'?'the local model.':'Gemma via OpenRouter.')+' Based on the emergency guidance cards.';
+   }catch(error){if(requestMode==='local'){localReady=false;updateConnection();}$('message-status').textContent=error.name==='TimeoutError'?'The model took too long. Please try again.':error.message;}
+   finally{chatBusy=false;button.disabled=false;}
+ };
+
  setInterval(()=>{const now=performance.now();if(running&&!offline&&!document.hidden)seconds=Math.min(300,seconds+(now-lastTick)/1000*speed);lastTick=now;clock();if(seconds===300){running=false;$('play').textContent='Play';sendScene()}if(!controller&&!document.hidden)refresh();},1000);
  clock();changeConnection();refresh();
 })();

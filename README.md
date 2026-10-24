@@ -67,4 +67,4 @@ npm run weather:demo
 npm run weather:test
 ```
 
-Demo controls include three event stages and an offline transition. This module supplies validated context and browser handoff events; it is not yet wired to the agent in `src/agent.ts`. Voice, local model activation, and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
+Demo controls include three event stages and an offline transition. The companion chat uses a server-side cards-based adapter: OpenRouter while connected, or the local model endpoint in offline mode. Set OPENROUTER_API_KEY in the server environment for connected chat. It does not yet use the retrieval agent in `src/agent.ts`. Voice, local model startup, and offline reload caching remain integration work. See [the context and harness contract](modules/weather-companion/DATA_PIPELINE.md).
