@@ -96,7 +96,7 @@ const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
 ];
 
 // ---- The system prompt ----------------------------------------------------------------------------
-export const PROMPT_VERSION = "2026-10-24.5"; // bump when RULES or the profile change; it's written to the log
+export const PROMPT_VERSION = "2026-10-24.6"; // bump when RULES or the profile change; it's written to the log
 const RULES = [
   "You are an offline emergency assistant running on the user's laptop with no internet.",
   "Answer ONLY from the cards and official passages provided with each question",
@@ -110,6 +110,14 @@ const RULES = [
   "Reply in the same language the user writes in.",
 ];
 const PROFILE_TEXT = profileText(); // data/profile.json, see profile.ts
+/**
+ * Health words that bring the medical reminder next to the question (medicines, devices, symptoms, injuries).
+ * Why only then: the reminder ends with "refer to 911", and placed before every question it made the model
+ * open every answer with "If you are in immediate danger, call 911", even for "I can't do that".
+ * The medical limit itself is in the system rules for every question.
+ */
+const HEALTH_WORDS =
+  /\b(medicines?|medications?|meds|pills?|insulin|inhalers?|albuterol|oxygen|concentrator|cpap|dialysis|devices?|doses?|dosage|prescriptions?|pharmac\w*|sick|ill|hurt|injur\w*|pain|bleed\w*|burn(ed|s)?|wounds?|dizzy|faint\w*|confus\w*|breath\w*|chest|heart|asthma|diabet\w*|symptoms?|fever|vomit\w*|nause\w*|stroke|unconscious|cramps?|exhaustion|treat\w*|first aid|medicina|insulina)\b/i;
 const MEDICAL_REMINDER =
   "Reminder: for medicines and devices give handling facts only (storage, temperature, how long they last, when to replace); never whether to use or keep using them. For symptoms, injuries or treatment, refer to 911, a pharmacist or a doctor. No first aid, doses or treatment steps.";
 const SYSTEM_PROMPT = [...RULES, "", PROFILE_TEXT].join("\n");
@@ -216,7 +224,8 @@ export async function ask(
   ];
   // The reminder sits right before the question because small models follow nearby instructions best.
   const situation = extra.situation ? `Current situation:\n${extra.situation}\n\n` : "";
-  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\n${situation}${MEDICAL_REMINDER}\n\nQuestion: ${question}`;
+  const reminder = HEALTH_WORDS.test(query) ? `${MEDICAL_REMINDER}\n\n` : "";
+  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\n${situation}${reminder}Question: ${question}`;
 
   // 5: the Agents SDK call. Earlier turns go in as plain text; only this question gets sources.
   const runner = new Runner({

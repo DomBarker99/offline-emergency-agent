@@ -29,7 +29,11 @@ test("offline questions go to the local model, with the shared agent's rules", a
     const result = await answerChat({ text: "Explain flood protection", mode: "local", context: null, history: [] });
     assert.match(fake.calls[0].url, /127.0.0.1:8080/);
     assert.match(fake.calls[0].messages, /calm emergency companion/);
-    assert.match(fake.calls[0].messages, /handling facts only/); // the medical limit is in the prompt
+    assert.match(fake.calls[0].messages, /not a medical provider/); // the medical limit is in the system rules
+    assert.doesNotMatch(fake.calls[0].messages, /handling facts only/); // no medical reminder on a non-health question
+    assert.match(fake.calls[0].messages, /Mention calling 911 at most once/);
+    await answerChat({ text: "Maria's insulin got warm. What now?", mode: "local", context: null, history: [] });
+    assert.match(fake.calls[1].messages, /handling facts only/); // health question: the reminder is right before it
     assert.match(fake.calls[0].messages, /offline right now/);
     assert.equal(result.provider, "local");
     assert.equal(result.fallback, false);
