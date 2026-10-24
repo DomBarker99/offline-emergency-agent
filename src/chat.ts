@@ -1,7 +1,8 @@
 /**
  * Terminal chat. Type a question, get a cited answer. Remembers the conversation until /clear.
  *
- * Usage:   npm run chat -- --provider openrouter        (Gemma on OpenRouter, needs internet)
+ * Usage:   npm run chat                                 (provider from AGENT_PROVIDER in .env, default local)
+ *          npm run chat -- --provider openrouter        (Gemma on OpenRouter, needs internet)
  *          npm run chat -- --provider local             (Gemma on this laptop; run playground/start.sh first)
  *          add  --model <name>  to use another model on that provider
  * Commands: /sources (what the last answer was based on)  /clear  /quit
@@ -14,7 +15,7 @@ const flag = (name: string) => {
   const i = process.argv.indexOf(name);
   return i >= 0 ? process.argv[i + 1] : undefined;
 };
-const provider = (flag("--provider") ?? "local") as ProviderName;
+const provider = (flag("--provider") ?? process.env.AGENT_PROVIDER ?? "local") as ProviderName;
 const model = flag("--model");
 if (!(provider in PROVIDERS)) throw new Error(`--provider must be one of: ${Object.keys(PROVIDERS).join(", ")}`);
 

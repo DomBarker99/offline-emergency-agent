@@ -4,5 +4,5 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("agent", {
   info: () => ipcRenderer.invoke("info"),
-  ask: (question, history, provider) => ipcRenderer.invoke("ask", { question, history, provider }),
+  ask: (question, history) => ipcRenderer.invoke("ask", { question, history }),
 });

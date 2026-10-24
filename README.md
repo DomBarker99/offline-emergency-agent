@@ -46,8 +46,9 @@ llama-server --models-preset config/llama-server.example.ini --models-max 1
 | Variable | Used for |
 | --- | --- |
 | `OPENROUTER_API_KEY` | `--provider openrouter` |
+| `AGENT_PROVIDER` | `local` (default) or `openrouter`: which model the app and chat use. Fixed for a run. |
 | `OPENROUTER_BASE_URL`, `LOCAL_BASE_URL` | Optional: send model calls elsewhere (e.g. through a debugging proxy) |
-| `AGENT_PROVIDER`, `AGENT_DEVTOOLS` | Desktop app: starting model (`local`/`openrouter`), open DevTools (`1`) |
+| `AGENT_DEVTOOLS` | `1` opens DevTools next to the app window |
 | `CORPUS_DIR` | `npm run embed` default input, and the Python library tools |
 | `BUILD_LLM_*` | Python library tools only (see docs/KNOWLEDGE.md) |
 

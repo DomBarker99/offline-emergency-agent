@@ -4,8 +4,8 @@
 const log = document.getElementById("log");
 const input = document.getElementById("question");
 const askButton = document.getElementById("ask");
-const providerSelect = document.getElementById("provider");
 let history = []; // the conversation so far, sent with every question
+let info = { provider: "local" }; // where the model runs; fixed for this run by .env (see main.ts)
 
 /** Escapes text for HTML, then highlights citations like [L1] or [C1, L4] and **bold** markdown. */
 function format(text) {
@@ -44,15 +44,15 @@ async function send() {
   if (!question) return;
   input.value = "";
   addMessage("you", format(question));
-  const pending = addMessage("agent", providerSelect.value === "local" ? "Thinking… (the first local answer also loads the model, up to 30 s)" : "Thinking…");
+  const pending = addMessage("agent", info.provider === "local" ? "Thinking… (the first local answer may also load the model, up to 30 s)" : "Thinking…");
   askButton.disabled = true;
   try {
-    const turn = await window.agent.ask(question, history, providerSelect.value);
+    const turn = await window.agent.ask(question, history);
     pending.innerHTML = format(turn.answer) + metaHtml(turn);
     history.push({ role: "user", text: question }, { role: "assistant", text: turn.answer });
   } catch (err) {
     pending.className = "msg error";
-    const hint = providerSelect.value === "local" ? " Is the local model running? (playground/start.sh)" : "";
+    const hint = info.provider === "local" ? " Is the local model running? (playground/start.sh)" : "";
     pending.textContent = `Error: ${err.message.replace(/^Error invoking remote method 'ask': /, "")}.${hint}`;
   } finally {
     askButton.disabled = false;
@@ -74,15 +74,11 @@ document.getElementById("new").addEventListener("click", () => {
   input.focus();
 });
 
-// Start in the mode set by .env, and show where model calls go (e.g. through mitmproxy).
-window.agent.info().then((info) => {
-  providerSelect.value = info.provider;
-  const showMode = () => {
-    const url = info.endpoints[providerSelect.value];
-    const watched = /127\.0\.0\.1:(8090|8091)/.test(url) ? " · watched by mitmproxy" : "";
-    document.getElementById("mode").textContent = `model calls → ${url}${watched}${info.devtools ? " · devtools" : ""}`;
-  };
-  providerSelect.addEventListener("change", showMode);
-  showMode();
+// Show which model this run uses and where its calls go (e.g. through mitmproxy).
+window.agent.info().then((i) => {
+  info = i;
+  const name = info.provider === "local" ? "Local" : "OpenRouter";
+  const watched = /127\.0\.0\.1:(8090|8091)/.test(info.endpoint) ? " · watched by mitmproxy" : "";
+  document.getElementById("mode").textContent = `${name} · ${info.model} · ${info.endpoint}${watched}`;
   input.focus();
 });

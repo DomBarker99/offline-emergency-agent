@@ -6,12 +6,12 @@
  * preload.cjs, and ipcMain.handle("ask") below does the work.
  *
  * Usage:  npm run app
- * Modes, read from .env at startup (a value set in the shell wins over .env):
- *   AGENT_PROVIDER=local|openrouter   which model the window starts with (default local)
+ * Configuration comes from .env (pick one block there; a value set in the shell wins over .env):
+ *   AGENT_PROVIDER=local|openrouter   where the model runs, fixed for this run (default local)
+ *   LOCAL_BASE_URL / OPENROUTER_BASE_URL   optional: route model calls elsewhere (e.g. mitmproxy)
  *   AGENT_DEVTOOLS=1                  open Chromium DevTools next to the window
- *   LOCAL_BASE_URL / OPENROUTER_BASE_URL  route model calls elsewhere (e.g. through mitmproxy)
  */
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 
 const root = new URL("../", import.meta.url);
 try {
@@ -23,19 +23,23 @@ try {
 // Imported after .env is loaded, because agent.ts reads the provider settings when it loads.
 const { ask, PROVIDERS } = await import("../src/agent.ts");
 type ProviderName = keyof typeof PROVIDERS;
+type Turn = { role: "user" | "assistant"; text: string };
 
-const startProvider: ProviderName = process.env.AGENT_PROVIDER === "openrouter" ? "openrouter" : "local";
+const provider = (process.env.AGENT_PROVIDER ?? "local") as ProviderName;
 
 ipcMain.handle("info", () => ({
-  provider: startProvider,
-  endpoints: { local: PROVIDERS.local.baseURL, openrouter: PROVIDERS.openrouter.baseURL },
-  devtools: process.env.AGENT_DEVTOOLS === "1",
+  provider,
+  model: PROVIDERS[provider].model,
+  endpoint: PROVIDERS[provider].baseURL,
 }));
-ipcMain.handle("ask", (_event, req: { question: string; history: { role: "user" | "assistant"; text: string }[]; provider: ProviderName }) =>
-  ask(req.question, req.history, req.provider),
-);
+ipcMain.handle("ask", (_event, req: { question: string; history: Turn[] }) => ask(req.question, req.history, provider));
 
 app.whenReady().then(() => {
+  if (!(provider in PROVIDERS)) {
+    dialog.showErrorBox("Configuration error", `AGENT_PROVIDER must be "local" or "openrouter" (got "${provider}"). Check .env.`);
+    app.quit();
+    return;
+  }
   const win = new BrowserWindow({
     width: 900,
     height: 760,
