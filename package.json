@@ -12,7 +12,10 @@
     "chat": "node --env-file-if-exists=.env src/chat.ts",
     "embed": "node --env-file-if-exists=.env src/embed.ts",
     "bench": "node --env-file-if-exists=.env src/bench.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "weather:install": "npm ci --prefix modules/weather-companion",
+    "weather:demo": "npm start --prefix modules/weather-companion",
+    "weather:test": "npm test --prefix modules/weather-companion"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
