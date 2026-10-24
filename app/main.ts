@@ -21,7 +21,7 @@ try {
 }
 
 // Imported after .env is loaded, because agent.ts reads the provider settings when it loads.
-const { ask, PROVIDERS } = await import("../src/agent.ts");
+const { ask, PROVIDERS, stripCitations } = await import("../src/agent.ts");
 type ProviderName = keyof typeof PROVIDERS;
 type Turn = { role: "user" | "assistant"; text: string };
 
@@ -32,7 +32,12 @@ ipcMain.handle("info", () => ({
   model: PROVIDERS[provider].model,
   endpoint: PROVIDERS[provider].baseURL,
 }));
-ipcMain.handle("ask", (_event, req: { question: string; history: Turn[] }) => ask(req.question, req.history, provider));
+// The window gets only the answer text, without citation tags. Sources, dangers, flags and timing stay
+// here and in the log (logs/turns-<date>.jsonl); nothing about them is shown in the chat.
+ipcMain.handle("ask", async (_event, req: { question: string; history: Turn[] }) => {
+  const turn = await ask(req.question, req.history, provider);
+  return { answer: stripCitations(turn.answer) };
+});
 
 app.whenReady().then(() => {
   if (!(provider in PROVIDERS)) {

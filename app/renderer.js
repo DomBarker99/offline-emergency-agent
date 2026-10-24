@@ -1,4 +1,5 @@
-// Desktop app window logic: send questions through window.agent (preload.cjs), show answers and sources.
+// Desktop app window logic: send questions through window.agent (preload.cjs) and show the answers.
+// The window only ever receives answer text; sources and other details stay in the main process and log.
 // Plain JavaScript because the browser side runs it as-is (no build step).
 
 const log = document.getElementById("log");
@@ -7,12 +8,10 @@ const askButton = document.getElementById("ask");
 let history = []; // the conversation so far, sent with every question
 let info = { provider: "local" }; // where the model runs; fixed for this run by .env (see main.ts)
 
-/** Escapes text for HTML, then highlights citations like [L1] or [C1, L4] and **bold** markdown. */
+/** Escapes text for HTML, then turns **bold** markdown into bold text. */
 function format(text) {
   const safe = text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  return safe
-    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
-    .replace(/\[([A-Z]+\d+(?:\s*,\s*[A-Z]+\d+)*)\]/g, '<span class="cite">[$1]</span>');
+  return safe.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 }
 
 function addMessage(kind, html) {
@@ -24,21 +23,6 @@ function addMessage(kind, html) {
   return div;
 }
 
-/** The line under an answer: danger badge, flags, time, model, and the sources it was given. */
-function metaHtml(turn) {
-  const dangers = turn.dangers.map((d) => `<span class="danger">⚠ ${d}</span>`).join("");
-  const flags = turn.flags.map((f) => `<span class="flag">${format(f)}</span>`).join("");
-  const sources = turn.sources
-    .map((s) => {
-      const link = s.url ? ` · <a href="${s.url}" target="_blank">open page</a>` : "";
-      return `<li><b>${s.id}</b>${s.pinned ? " (danger card)" : ""} ${format(s.title || "")} · ${format(s.publisher)}${link}</li>`;
-    })
-    .join("");
-  const seconds = (turn.ms.total / 1000).toFixed(1);
-  return `<div class="meta">${dangers}${flags}${seconds} s · ${turn.model}
-    <details><summary>${turn.sources.length} sources</summary><ul>${sources}</ul></details></div>`;
-}
-
 async function send() {
   const question = input.value.trim();
   if (!question) return;
@@ -47,9 +31,9 @@ async function send() {
   const pending = addMessage("agent", info.provider === "local" ? "Thinking… (the first local answer may also load the model, up to 30 s)" : "Thinking…");
   askButton.disabled = true;
   try {
-    const turn = await window.agent.ask(question, history);
-    pending.innerHTML = format(turn.answer) + metaHtml(turn);
-    history.push({ role: "user", text: question }, { role: "assistant", text: turn.answer });
+    const { answer } = await window.agent.ask(question, history);
+    pending.innerHTML = format(answer);
+    history.push({ role: "user", text: question }, { role: "assistant", text: answer });
   } catch (err) {
     pending.className = "msg error";
     const hint = info.provider === "local" ? " Is the local model running? (playground/start.sh)" : "";

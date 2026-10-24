@@ -112,6 +112,18 @@ export function citedIds(answer: string): string[] {
   return [...new Set([...brackets].flatMap((m) => m[1].split(/\s*,\s*/)))];
 }
 
+/**
+ * The answer as people should see it: citation tags like "[L1]" or "[C4, L2]" removed.
+ * The model still cites (it keeps answers tied to the sources, and the log/benchmark use the tags);
+ * the chat just doesn't show them.
+ */
+export function stripCitations(answer: string): string {
+  return answer
+    .replace(/\s*[\[\u3010]\s*[A-Z]+\d+(?:\s*,\s*[A-Z]+\d+)*\s*[\]\u3011]/g, "")
+    .replace(/[ \t]+([.,;:!?])/g, "$1")
+    .trim();
+}
+
 /** Step 6: problems in the answer, judged only against what the model was shown. Empty = fine. */
 function checkAnswer(answer: string, shownIds: string[], shownText: string): string[] {
   const flags: string[] = [];

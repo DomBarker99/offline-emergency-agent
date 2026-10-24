@@ -5,11 +5,12 @@
  *          npm run chat -- --provider openrouter        (Gemma on OpenRouter, needs internet)
  *          npm run chat -- --provider local             (Gemma on this laptop; run playground/start.sh first)
  *          add  --model <name>  to use another model on that provider
- * Commands: /sources (what the last answer was based on)  /clear  /quit
+ * Shows only the answer (citation tags removed). Commands: /sources (what the last answer was based on,
+ * for debugging)  /clear  /quit. Everything else is in logs/turns-<date>.jsonl.
  * Piped input works too:  printf 'Can I use the grill indoors?\n' | npm run chat -- --provider local
  */
 import { createInterface } from "node:readline";
-import { ask, PROVIDERS, type ProviderName, type Turn } from "./agent.ts";
+import { ask, PROVIDERS, stripCitations, type ProviderName, type Turn } from "./agent.ts";
 
 const flag = (name: string) => {
   const i = process.argv.indexOf(name);
@@ -41,10 +42,9 @@ for await (const line of rl) {
   } else if (text) {
     try {
       last = await ask(text, history, provider, model);
-      console.log(`\nagent> ${last.answer}\n`);
-      const extras = [last.dangers.length ? `danger: ${last.dangers.join(",")}` : "", last.flags.length ? `flags: ${last.flags.join(",")}` : ""];
-      console.log(`  (${last.model} | ${(last.ms.total / 1000).toFixed(1)}s | ${last.sources.map((s) => s.id).join(",")} ${extras.filter(Boolean).join(" | ")})\n`);
-      history.push({ role: "user", text }, { role: "assistant", text: last.answer });
+      const answer = stripCitations(last.answer);
+      console.log(`\nagent> ${answer}\n`);
+      history.push({ role: "user", text }, { role: "assistant", text: answer });
     } catch (e) {
       console.log(`(error: ${(e as Error).message})`);
     }
