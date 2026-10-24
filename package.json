@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "app": "electron app/main.ts",
     "chat": "node --env-file-if-exists=.env src/chat.ts",
     "embed": "node --env-file-if-exists=.env src/embed.ts",
     "bench": "node --env-file-if-exists=.env src/bench.ts",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "24.19.2",
+    "electron": "45.0.0",
     "typescript": "7.0.2"
   },
   "dependencies": {

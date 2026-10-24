@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- Desktop app window: a simple chat screen. Stand-in until the real frontend is ready. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+  <title>Offline Emergency Agent</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.45 -apple-system, BlinkMacSystemFont, sans-serif; color: #1d1d1f; background: #f5f5f7;
+           display: flex; flex-direction: column; height: 100vh; }
+    header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #ddd; }
+    header h1 { font-size: 16px; margin: 0; flex: 1; }
+    .mode { font-size: 12px; color: #666; }
+    select, button, textarea { font: inherit; }
+    #log { flex: 1; overflow-y: auto; padding: 16px; }
+    .msg { max-width: 760px; margin: 0 auto 14px; padding: 10px 14px; border-radius: 10px; white-space: pre-wrap; }
+    .you { background: #dbeafe; margin-left: auto; max-width: 600px; }
+    .agent { background: #fff; border: 1px solid #e3e3e3; }
+    .error { background: #fee2e2; border: 1px solid #fca5a5; }
+    .cite { color: #1d4ed8; font-weight: 600; }
+    .meta { font-size: 12px; color: #666; margin-top: 8px; white-space: normal; }
+    .danger { background: #fde68a; color: #7c2d12; border-radius: 4px; padding: 1px 6px; margin-right: 6px; font-weight: 600; }
+    .flag { background: #fecaca; color: #7f1d1d; border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
+    details { margin-top: 6px; }
+    details li { margin: 3px 0; }
+    details a { color: #1d4ed8; }
+    footer { display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #ddd; }
+    textarea { flex: 1; resize: none; height: 46px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: 0 16px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; }
+    button.secondary { background: #e5e7eb; color: #111; }
+    button:disabled { opacity: 0.5; cursor: default; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Offline Emergency Agent</h1>
+    <span class="mode" id="mode"></span>
+    <select id="provider" title="Where the model runs">
+      <option value="local">Local (offline)</option>
+      <option value="openrouter">OpenRouter</option>
+    </select>
+  </header>
+  <main id="log"></main>
+  <footer>
+    <textarea id="question" placeholder="Type a question and press Enter"></textarea>
+    <button id="ask">Ask</button>
+    <button id="new" class="secondary">New chat</button>
+  </footer>
+  <script src="renderer.js"></script>
+</body>
+</html>
