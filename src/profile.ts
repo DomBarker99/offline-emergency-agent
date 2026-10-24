@@ -16,6 +16,14 @@ interface Person {
   access: string[]; // mobility, hearing or vision needs
 }
 
+/** The person to call for help. Also shown, read-only, on the app's screen (see the companion's setup.ts). */
+export interface SupportContact {
+  name: string;
+  relation: string; // e.g. "aunt"
+  city: string;
+  phone: string;
+}
+
 /** The shape of data/profile.json. */
 export interface Profile {
   householdSize: number;
@@ -23,7 +31,7 @@ export interface Profile {
   home: { type: string; nearbyHazards: string[] };
   people: Person[];
   animals: { name: string; type: string; notes?: string }[];
-  plan: { meetingPoints: string[]; outOfAreaContact: string; transport: string };
+  plan: { meetingPoints: string[]; supportContact: SupportContact; transport: string };
 }
 
 export const PROFILE: Profile = JSON.parse(readFileSync(new URL("../data/profile.json", import.meta.url), "utf8"));
@@ -47,6 +55,11 @@ function pets(p: Profile): string {
   return p.animals.length === 1 ? `, plus 1 ${p.animals[0].type}` : `, plus ${p.animals.length} animals`;
 }
 
+/** "Aunt Rosa (aunt) in Sacramento, 555-0142" */
+export function contactLine(c: SupportContact): string {
+  return `${c.name} (${c.relation}) in ${c.city}, ${c.phone}`;
+}
+
 /** The profile as the lines the model reads. */
 export function profileText(p: Profile = PROFILE): string {
   const animals = p.animals.map((a) => `${a.name}, ${a.type}${a.notes ? ` (${a.notes})` : ""}`);
@@ -58,7 +71,7 @@ export function profileText(p: Profile = PROFILE): string {
     ...p.people.map(personLine),
     ...(animals.length ? [`- Animals: ${animals.join("; ")}`] : []),
     `- Meeting points: ${p.plan.meetingPoints.join("; ")}`,
-    `- Out-of-area contact: ${p.plan.outOfAreaContact}`,
+    `- Support contact (out of area): ${contactLine(p.plan.supportContact)}`,
     `- Transport: ${p.plan.transport}`,
   ].join("\n");
 }

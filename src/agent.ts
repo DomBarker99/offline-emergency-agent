@@ -32,7 +32,10 @@ export const PROVIDERS = {
   openrouter: {
     baseURL: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
     model: "google/gemma-4-26b-a4b-it",
-    apiKey: process.env.OPENROUTER_API_KEY,
+    // Read when used, not when this file loads, so a key set later (tests, .env loaded by the app) counts.
+    get apiKey() {
+      return process.env.OPENROUTER_API_KEY;
+    },
     extra: { reasoning: { enabled: false } }, // Gemma "thinking" off: faster, same answers
   },
 };
@@ -65,7 +68,7 @@ const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
 ];
 
 // ---- The system prompt ----------------------------------------------------------------------------
-export const PROMPT_VERSION = "2026-10-24.3"; // bump when RULES or the profile change; it's written to the log
+export const PROMPT_VERSION = "2026-10-24.4"; // bump when RULES or the profile change; it's written to the log
 const RULES = [
   "You are an offline emergency assistant running on the user's laptop with no internet.",
   "Answer ONLY from the cards and official passages provided with each question",
@@ -150,15 +153,18 @@ export interface Source {
  * @param model     optional model name for that provider (default: Gemma 4 26B)
  * @param extra     optional, from a screen that knows more about the moment (the weather companion):
  *                  situation = text added to the prompt before the question (e.g. simulated weather);
- *                  searchHint = words added to the library search only (e.g. "flood")
- * @throws if OpenRouter is chosen without OPENROUTER_API_KEY, or the model server can't be reached
+ *                  searchHint = words added to the library search only (e.g. "flood");
+ *                  timeoutMs = give up on the model call after this long (the app uses it so an online
+ *                  call that hangs when the internet drops can fall back to the local model quickly)
+ * @throws if OpenRouter is chosen without OPENROUTER_API_KEY, the model server can't be reached, or the
+ *         call takes longer than timeoutMs
  */
 export async function ask(
   question: string,
   history: Turn[],
   provider: ProviderName,
   model?: string,
-  extra: { situation?: string; searchHint?: string } = {},
+  extra: { situation?: string; searchHint?: string; timeoutMs?: number } = {},
 ) {
   const started = performance.now();
   const target = PROVIDERS[provider];
@@ -195,7 +201,9 @@ export async function ask(
     modelSettings: { temperature: 0.2, maxTokens: 600, providerData: target.extra },
   });
   const input = [...history.map((t) => (t.role === "user" ? user(t.text) : assistant(t.text))), user(message)];
-  const result = await runner.run(agent, input);
+  // An AbortSignal cancels the HTTP call; without timeoutMs the call waits as long as the server needs.
+  const signal = extra.timeoutMs ? AbortSignal.timeout(extra.timeoutMs) : undefined;
+  const result = await runner.run(agent, input, { signal });
   const answer = String(result.finalOutput ?? "").trim();
 
   const sources: Source[] = [
@@ -221,4 +229,27 @@ export async function ask(
   mkdirSync(new URL("../logs/", import.meta.url), { recursive: true }); // 7
   appendFileSync(new URL(`../logs/turns-${turn.at.slice(0, 10)}.jsonl`, import.meta.url), JSON.stringify(turn) + "\n");
   return turn;
+}
+
+/**
+ * Loads the local model (or keeps it loaded) by asking it for one token.
+ *
+ * Why: the local model server unloads an idle model after a while, and loading it again takes several
+ * seconds. The app calls this at start and then every few minutes, so when the internet drops, the first
+ * offline answer comes right away instead of waiting for a load.
+ * @returns true when the local model answered, false when it isn't reachable (never throws)
+ */
+export async function warmLocal(): Promise<boolean> {
+  const local = PROVIDERS.local;
+  try {
+    const response = await fetch(`${local.baseURL}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: local.model, messages: [{ role: "user", content: "OK" }], max_tokens: 1 }),
+      signal: AbortSignal.timeout(120_000), // a first load from disk can take a while
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

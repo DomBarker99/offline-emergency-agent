@@ -1,41 +1,39 @@
 /**
- * Desktop app (Electron): the weather companion in a window, answered by the shared agent.
+ * Desktop app (Electron): the companion screen in a window, answered by the shared agent.
  *
  *   Electron main process (this file)
  *     ├─ loads .env (the settings below)
  *     ├─ starts the companion server in this process: modules/weather-companion/src/server.ts on 127.0.0.1:4317
- *     │     /companion      the page            /v2/context   simulated weather
- *     │     /api/chat  ──►  chat.ts ──► ask() in src/agent.ts (library search, cards, profile, medical limit)
- *     │     /api/pack       browse the saved guidance
- *     └─ opens a window on http://127.0.0.1:4317/companion?view=…&scenario=…&provider=…
+ *     │     /companion   the screen          /api/feed     the emergency (live while there is internet)
+ *     │     /api/chat ──► chat.ts ──► ask() in src/agent.ts (library search, cards, profile, medical limit)
+ *     │     /api/transcribe ──► Whisper on this laptop (src/transcribe.ts)
+ *     └─ opens a window on http://127.0.0.1:4317/companion
  *
  * Usage:  npm run app   (or double-click the launcher)
  * Settings, read from .env at startup (a value set in the shell wins over .env):
- *   AGENT_PROVIDER  local | openrouter      model used while online (offline always uses local)
- *   AGENT_VIEW      production | demo       demo adds the scenario, playback and "Simulate offline" controls
- *   AGENT_SCENARIO  flood | fire | earthquake | outage | heat
+ *   AGENT_PROVIDER  openrouter | local      model used while online (offline always uses the local model)
+ *   AGENT_SCENARIO  flood | fire | earthquake | outage | heat     the active emergency the app opens on
  *   AGENT_DEVTOOLS=1                        open Chromium DevTools next to the window
+ * Presenter key: Ctrl+Shift+O in the window switches "simulate offline" on and off (handled by the page).
  */
 import { createConnection } from "node:net";
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, session, shell } from "electron";
 
 const root = new URL("../", import.meta.url);
 try {
   process.loadEnvFile(new URL(".env", root));
 } catch {
-  // No .env: the defaults below apply (local model, production view, flood).
+  // No .env: the defaults below apply (local model, flood).
 }
 
 const PORT = 4317;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const settings = {
   provider: process.env.AGENT_PROVIDER ?? "local",
-  view: process.env.AGENT_VIEW ?? "production",
   scenario: process.env.AGENT_SCENARIO ?? "flood",
 };
 const allowed: Record<keyof typeof settings, string[]> = {
   provider: ["local", "openrouter"],
-  view: ["production", "demo"],
   scenario: ["flood", "fire", "earthquake", "outage", "heat"],
 };
 
@@ -50,7 +48,7 @@ function portInUse(port: number): Promise<boolean> {
 
 /** Waits until the companion server answers /health (it loads the library first). */
 async function waitForServer(): Promise<void> {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 150; i++) {
     try {
       if ((await fetch(`${ORIGIN}/health`)).ok) return;
     } catch {
@@ -73,21 +71,36 @@ app.whenReady().then(async () => {
     }
   }
   if (await portInUse(PORT)) {
-    return fail(`Port ${PORT} is already in use, probably by the weather companion started from a terminal. Stop it and open the app again.`);
+    return fail(`Port ${PORT} is already in use, probably by the companion started from a terminal. Stop it and open the app again.`);
   }
+
+  // Microphone for dictation: allowed for our own page only, and only audio. Electron would otherwise
+  // grant every permission request. (macOS still asks the person once, the first time.)
+  session.defaultSession.setPermissionRequestHandler((_contents, permission, callback, details) => {
+    const ours = details.requestingUrl.startsWith(ORIGIN);
+    const audioOnly = permission === "media" && "mediaTypes" in details && (details.mediaTypes ?? []).every((t) => t === "audio");
+    callback(ours && audioOnly);
+  });
+  session.defaultSession.setPermissionCheckHandler((_contents, permission, requestingOrigin) => permission === "media" && requestingOrigin === ORIGIN);
+
   // Start the companion server inside this process. The path is built at runtime on purpose, so the
   // TypeScript check of the app doesn't also type-check the companion module.
   process.env.PORT = String(PORT);
+  process.env.AGENT_PROVIDER = settings.provider;
+  process.env.AGENT_SCENARIO = settings.scenario;
   await import(new URL("../modules/weather-companion/src/server.ts", import.meta.url).href);
   await waitForServer();
 
   const win = new BrowserWindow({
     width: 1320,
     height: 880,
+    minWidth: 720,
+    minHeight: 600,
     title: "Offline Emergency Agent",
-    webPreferences: { contextIsolation: true, sandbox: true },
+    backgroundColor: "#f6f5f0",
+    webPreferences: { contextIsolation: true, sandbox: true, spellcheck: false },
   });
-  // Source links and the companion's other pages open in the normal browser; the window stays on the companion.
+  // Links (the official source pages, the support contact's phone number) open outside the app.
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
@@ -98,8 +111,7 @@ app.whenReady().then(async () => {
       shell.openExternal(url);
     }
   });
-  const query = new URLSearchParams(settings).toString();
-  win.loadURL(`${ORIGIN}/companion?${query}`);
+  win.loadURL(`${ORIGIN}/companion`);
   if (process.env.AGENT_DEVTOOLS === "1") win.webContents.openDevTools({ mode: "detach" });
 });
 
