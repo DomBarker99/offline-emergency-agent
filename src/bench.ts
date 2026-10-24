@@ -59,7 +59,16 @@ const rows: Row[] = [];
 for (const q of questions) {
   let t;
   try {
-    t = await ask(q.question, q.history ?? [], provider, flag("--model"), { timeoutMs: 180_000 });
+    // Rate limits (HTTP 429, common on small OpenRouter providers) are retried after a pause, up to 4 times.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        t = await ask(q.question, q.history ?? [], provider, flag("--model"), { timeoutMs: 180_000 });
+        break;
+      } catch (error) {
+        if (attempt >= 5 || !String(error).includes("429")) throw error;
+        await new Promise((r) => setTimeout(r, 15_000 * attempt));
+      }
+    }
   } catch (error) {
     // One failed answer (timeout, provider error) is counted as a failure instead of ending the run.
     const message = error instanceof Error ? error.message : String(error);
