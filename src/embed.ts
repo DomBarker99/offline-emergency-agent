@@ -7,7 +7,7 @@
  * Takes about 1.5 minutes for ~2,000 passages. Rerun whenever passages.jsonl changes.
  */
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { embed, EMBEDDING_MODEL, embeddingText, LIBRARY_DIR, loadEmbedder, type Passage } from "./search.ts";
 
 const source = process.argv[2] ?? (process.env.CORPUS_DIR && join(process.env.CORPUS_DIR, "passages.jsonl"));
@@ -17,7 +17,7 @@ mkdirSync(LIBRARY_DIR, { recursive: true });
 copyFileSync(source, new URL("passages.jsonl", LIBRARY_DIR));
 const passages = readFileSync(source, "utf8").trim().split("\n").map((l) => JSON.parse(l) as Passage);
 
-const embedder = await loadEmbedder(true);
+const embedder = await loadEmbedder();
 const started = performance.now();
 const vectors: Float32Array[] = [];
 for (let i = 0; i < passages.length; i += 32) {
@@ -31,6 +31,7 @@ vectors.forEach((v, i) => flat.set(v, i * v.length));
 writeFileSync(new URL("vectors.bin", LIBRARY_DIR), Buffer.from(flat.buffer));
 writeFileSync(
   new URL("library.json", LIBRARY_DIR),
-  JSON.stringify({ source, passages: passages.length, model: EMBEDDING_MODEL, builtAt: new Date().toISOString() }, null, 2),
+  // Only the file name is recorded: this file is committed, and machine paths don't belong in the repo.
+  JSON.stringify({ source: basename(source), passages: passages.length, model: EMBEDDING_MODEL, builtAt: new Date().toISOString() }, null, 2),
 );
 console.log(`\ndone in ${Math.round((performance.now() - started) / 1000)} s -> ${LIBRARY_DIR.pathname}`);

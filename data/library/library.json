@@ -1,0 +1,6 @@
+{
+  "source": "passages.jsonl (from knowledge/extract.py)",
+  "passages": 2140,
+  "model": "Xenova/bge-small-en-v1.5",
+  "builtAt": "2026-10-24T02:15:52.122Z"
+}
