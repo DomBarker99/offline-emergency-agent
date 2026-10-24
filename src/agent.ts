@@ -5,7 +5,7 @@
  *     1. search text   short follow-ups ("What about the dog?") get the previous question added
  *     2. danger rules  words like "flooding" or "smell gas" force that danger's action card in
  *     3. search        the 5 library passages closest in meaning (search.ts)
- *     4. prompt        rules + household profile (system), then cards + passages + question (user)
+ *     4. prompt        rules + household profile (system, profile.ts), then cards + passages + question (user)
  *     5. model call    OpenAI Agents SDK -> local llama-server or OpenRouter (the only AI step)
  *     6. answer check  flags missing citations, invented phone numbers or doses (never blocks)
  *     7. log           one JSON line per question in logs/turns-<date>.jsonl, including the full prompt
@@ -14,6 +14,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { Agent, assistant, OpenAIProvider, Runner, setTracingDisabled, user } from "@openai/agents";
+import { profileText } from "./profile.ts";
 import { loadLibrary, type Passage } from "./search.ts";
 
 // The SDK sends traces to OpenAI by default. This app is offline and keeps its own log, so: off.
@@ -49,7 +50,6 @@ interface Card {
   source: { name: string; url?: string };
 }
 const CARDS: Card[] = readJson("../data/cards/library-cards.json");
-const PROFILE = readJson("../data/demo/profile.json");
 const library = await loadLibrary();
 
 /** Danger words -> the scenario whose action card must be shown. Plain rules: same result every time. */
@@ -65,7 +65,7 @@ const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
 ];
 
 // ---- The system prompt ----------------------------------------------------------------------------
-export const PROMPT_VERSION = "2026-10-23.1"; // bump when RULES change; it's written to the log
+export const PROMPT_VERSION = "2026-10-24.1"; // bump when RULES or the profile change; it's written to the log
 const RULES = [
   "You are an offline emergency assistant running on the user's laptop with no internet.",
   "Answer ONLY from the cards and official passages provided with each question. Cite their IDs in square brackets after each step, e.g. [C2] or [L1].",
@@ -76,16 +76,8 @@ const RULES = [
   "Safety first: if the user describes immediate danger (rising water, fire, gas, injury), give the protective action first; a plan card about leaving when officials order it never means staying in danger.",
   "Reply in the same language the user writes in.",
 ];
-const SYSTEM_PROMPT = [
-  ...RULES,
-  "",
-  "Household profile (from the user's own records):",
-  `- Household: ${PROFILE.household}`,
-  `- Location: ${PROFILE.location}`,
-  `- Medications: ${PROFILE.medications.join("; ") || "none listed"}`,
-  `- Meeting points: ${PROFILE.meetingPoints.join("; ")}`,
-  ...(PROFILE.notes ?? []).map((n: string) => `- ${n}`),
-].join("\n");
+const PROFILE_TEXT = profileText(); // data/profile.json, see profile.ts
+const SYSTEM_PROMPT = [...RULES, "", PROFILE_TEXT].join("\n");
 
 // ---- One question -----------------------------------------------------------------------------------
 export interface Turn {
@@ -194,7 +186,8 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
     ...cards.map((c) => ({ id: c.id, title: c.title, publisher: c.source.name, url: c.source.url, pinned: true })),
     ...passages.map((p, i) => ({ id: `L${i + 1}`, ref: p.id, title: p.heading, publisher: p.publisher, url: p.url, pinned: false })),
   ];
-  const flags = checkAnswer(answer, sources.map((s) => s.id), message); // 6
+  // Numbers may come from the passages or the profile (e.g. the out-of-area contact's phone).
+  const flags = checkAnswer(answer, sources.map((s) => s.id), `${message}\n${PROFILE_TEXT}`); // 6
   const turn = {
     at: new Date().toISOString(),
     provider,

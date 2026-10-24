@@ -9,7 +9,7 @@
                                      │                        └─ OpenRouter
                                      ├─ src/search.ts   embeddings + cosine search over data/library/
                                      ├─ data/cards/     action cards (pinned by danger rules)
-                                     └─ data/demo/profile.json   household profile
+                                     └─ src/profile.ts  household profile (data/profile.json)
 ```
 
 One process, one language. No servers of its own: the only network call is to the model.
@@ -35,12 +35,13 @@ The desktop app runs `ask()` inside Electron's main process. The window (`app/in
 app/               desktop app: main.ts (Electron main process), preload.cjs (bridge), index.html + renderer.js (window)
 src/agent.ts       ask(): everything above, plus providers, rules and the system prompt
 src/search.ts      embedding model + library search
+src/profile.ts     loads data/profile.json and turns it into the prompt's profile lines
 src/chat.ts        terminal chat (/sources for debugging, /clear, /quit)
 src/embed.ts       one-time: passages.jsonl → data/library/ (passages + vectors)
 src/bench.ts       benchmark on data/eval/questions.json
 data/cards/        action cards drafted from the library (reviewed by a person)
 data/eval/         benchmark questions
-data/demo/         household profile (placeholder)
+data/profile.json  household profile, fixed for now (fictional demo household)
 data/library/      runtime library (git-ignored, built by npm run embed)
 data/models/       embedding model files (git-ignored, downloaded by npm run embed)
 knowledge/         Python tools that collect official pages and build the library (docs/KNOWLEDGE.md)
