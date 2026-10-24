@@ -31,7 +31,7 @@ const server = createServer(async (req, res) => {
       let body='';for await(const chunk of req){body+=chunk;if(Buffer.byteLength(body)>524288)return reply(413,{error:'Request too large'});}
       let input;try{input=ChatRequest.safeParse(JSON.parse(body));}catch{return reply(400,{error:'Invalid JSON'});}
       if(!input.success)return reply(400,{error:'Invalid chat request'});
-      try{return reply(200,await answerChat(input.data));}catch{return reply(503,{error:input.data.mode==='local'?'Local assistance is unavailable. Start the local model server.':'Online assistance is unavailable. Check the server configuration or retry.'});}
+      try{return reply(200,await answerChat(input.data));}catch(error){console.error('chat failed:',error instanceof Error?error.message:error);return reply(503,{error:input.data.mode==='local'?'Local assistance is unavailable. Start the local model server.':'Online assistance is unavailable. Check the server configuration or retry.'});}
     }
     if (req.method === 'GET' && ['/scene.js' , '/studio.js', '/vendor/gsap.min.js'].includes(url.pathname)) {
       const asset = await readFile(new URL('../public' + url.pathname, import.meta.url));

@@ -39,6 +39,12 @@
  const $=id=>document.getElementById(id);
  $('view-mode').onchange=e=>{const demo=e.target.value==='demo';$('demo').hidden=!demo;$('demo').open=demo;$('view-note').textContent=demo?'Demo mode · Scenario controls enabled.':'Production layout preview · Live data is not connected.';};
  let seconds=0,running=true,speed=5,hazard='flood',lastTick=performance.now(),packet=null,requestId=0,controller=null,ready=false,replay=0;
+ // The desktop app fixes these from .env (AGENT_VIEW, AGENT_SCENARIO, AGENT_PROVIDER) and passes them in the URL.
+ const fixed=new URLSearchParams(location.search);
+ const fixedProvider=['local','openrouter'].includes(fixed.get('provider'))?fixed.get('provider'):null;
+ if(['production','demo'].includes(fixed.get('view'))){$('view-mode').value=fixed.get('view');$('view-mode').onchange({target:$('view-mode')});$('view-mode').closest('.view-switch').style.display='none';}
+ if(['flood','fire','earthquake','outage','heat'].includes(fixed.get('scenario'))){hazard=fixed.get('scenario');$('hazard').value=hazard;}
+ if(fixedProvider)$('message-status').textContent=fixedProvider==='local'?'Answers come from the model on this computer.':'Connected answers come from Gemma via OpenRouter. Offline answers come from the model on this computer.';
  const sessionStart=performance.now();let offlineStart=null,receivedMono=null;
  let simulatedOffline=false,offline=false,localReady=false,lastReceived=null;
  const mode=()=>({mode:offline?'local':'connected',reason:simulatedOffline?'demo':offline?'browser-offline':'connected',context:packet,contextFreshness:offline?'saved':'current',receivedAt:lastReceived,localReady});
@@ -98,7 +104,7 @@
    e.preventDefault();const text=$('message').value.trim();if(!text||chatBusy)return;
    const requestMode=offline?'local':'connected';chatBusy=true;append(text,true);$('message').value='';
    const button=$('chat-form').querySelector('button');button.disabled=true;
-   $('message-status').textContent=requestMode==='local'?'Asking the model on this computer…':'Asking Gemma through OpenRouter…';
+   $('message-status').textContent=requestMode==='local'||fixedProvider==='local'?'Asking the model on this computer…':fixedProvider==='openrouter'?'Asking Gemma through OpenRouter…':'Asking your assistant…';
    window.dispatchEvent(new CustomEvent('assistant:message',{detail:{id:'message-'+(++messageNumber),text,context:packet,assistance:mode()}}));
    try{
      const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(50000),body:JSON.stringify({text,mode:requestMode,context:packet,timing:timing(),history:history.slice(-12)})});
@@ -106,7 +112,7 @@
      if(requestMode!==(offline?'local':'connected')){ $('message-status').textContent='Connection mode changed. Please send your message again.';return; }
      append(result.answer);history.push({role:'user',content:text},{role:'assistant',content:result.answer});
      if(requestMode==='local'){localReady=true;updateConnection();}
-     $('message-status').textContent='Reply from '+(result.provider==='local'?'the local model.':'Gemma via OpenRouter.')+' Based on the emergency guidance cards.';
+     $('message-status').textContent='Reply from '+(result.provider==='local'?'the local model.':'Gemma via OpenRouter.')+' Based on the saved official guidance.';
    }catch(error){if(requestMode==='local'){localReady=false;updateConnection();}$('message-status').textContent=error.name==='TimeoutError'?'The model took too long. Please try again.':error.message;}
    finally{chatBusy=false;button.disabled=false;}
  };

@@ -1,64 +1,107 @@
 /**
- * Desktop app (Electron), main process: opens the window and answers its questions with ask().
+ * Desktop app (Electron): the weather companion in a window, answered by the shared agent.
  *
- * The agent runs right here in the main process (same code as the terminal chat, src/agent.ts).
- * The window (index.html + renderer.js) can't call it directly; it asks through the small bridge in
- * preload.cjs, and ipcMain.handle("ask") below does the work.
+ *   Electron main process (this file)
+ *     ├─ loads .env (the settings below)
+ *     ├─ starts the companion server in this process: modules/weather-companion/src/server.ts on 127.0.0.1:4317
+ *     │     /companion      the page            /v2/context   simulated weather
+ *     │     /api/chat  ──►  chat.ts ──► ask() in src/agent.ts (library search, cards, profile, medical limit)
+ *     │     /api/pack       browse the saved guidance
+ *     └─ opens a window on http://127.0.0.1:4317/companion?view=…&scenario=…&provider=…
  *
- * Usage:  npm run app
- * Configuration comes from .env (pick one block there; a value set in the shell wins over .env):
- *   AGENT_PROVIDER=local|openrouter   where the model runs, fixed for this run (default local)
- *   LOCAL_BASE_URL / OPENROUTER_BASE_URL   optional: route model calls elsewhere (e.g. mitmproxy)
- *   AGENT_DEVTOOLS=1                  open Chromium DevTools next to the window
+ * Usage:  npm run app   (or double-click the launcher)
+ * Settings, read from .env at startup (a value set in the shell wins over .env):
+ *   AGENT_PROVIDER  local | openrouter      model used while online (offline always uses local)
+ *   AGENT_VIEW      production | demo       demo adds the scenario, playback and "Simulate offline" controls
+ *   AGENT_SCENARIO  flood | fire | earthquake | outage | heat
+ *   AGENT_DEVTOOLS=1                        open Chromium DevTools next to the window
  */
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { createConnection } from "node:net";
+import { app, BrowserWindow, dialog, shell } from "electron";
 
 const root = new URL("../", import.meta.url);
 try {
   process.loadEnvFile(new URL(".env", root));
 } catch {
-  // No .env: fine for the local model; OpenRouter will report the missing key when used.
+  // No .env: the defaults below apply (local model, production view, flood).
 }
 
-// Imported after .env is loaded, because agent.ts reads the provider settings when it loads.
-const { ask, PROVIDERS, stripCitations } = await import("../src/agent.ts");
-type ProviderName = keyof typeof PROVIDERS;
-type Turn = { role: "user" | "assistant"; text: string };
+const PORT = 4317;
+const ORIGIN = `http://127.0.0.1:${PORT}`;
+const settings = {
+  provider: process.env.AGENT_PROVIDER ?? "local",
+  view: process.env.AGENT_VIEW ?? "production",
+  scenario: process.env.AGENT_SCENARIO ?? "flood",
+};
+const allowed: Record<keyof typeof settings, string[]> = {
+  provider: ["local", "openrouter"],
+  view: ["production", "demo"],
+  scenario: ["flood", "fire", "earthquake", "outage", "heat"],
+};
 
-const provider = (process.env.AGENT_PROVIDER ?? "local") as ProviderName;
-
-ipcMain.handle("info", () => ({
-  provider,
-  model: PROVIDERS[provider].model,
-  endpoint: PROVIDERS[provider].baseURL,
-}));
-// The window gets only the answer text, without citation tags. Sources, dangers, flags and timing stay
-// here and in the log (logs/turns-<date>.jsonl); nothing about them is shown in the chat.
-ipcMain.handle("ask", async (_event, req: { question: string; history: Turn[] }) => {
-  const turn = await ask(req.question, req.history, provider);
-  return { answer: stripCitations(turn.answer) };
-});
-
-app.whenReady().then(() => {
-  if (!(provider in PROVIDERS)) {
-    dialog.showErrorBox("Configuration error", `AGENT_PROVIDER must be "local" or "openrouter" (got "${provider}"). Check .env.`);
-    app.quit();
-    return;
-  }
-  const win = new BrowserWindow({
-    width: 900,
-    height: 760,
-    title: "Offline Emergency Agent",
-    webPreferences: { preload: new URL("preload.cjs", import.meta.url).pathname, contextIsolation: true, sandbox: true },
+/** True when something already listens on the port (e.g. `npm run weather:demo` in a terminal). */
+function portInUse(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = createConnection({ host: "127.0.0.1", port });
+    socket.once("connect", () => (socket.destroy(), resolve(true)));
+    socket.once("error", () => resolve(false));
   });
-  // Source links open in the normal browser, never inside the app window.
+}
+
+/** Waits until the companion server answers /health (it loads the library first). */
+async function waitForServer(): Promise<void> {
+  for (let i = 0; i < 100; i++) {
+    try {
+      if ((await fetch(`${ORIGIN}/health`)).ok) return;
+    } catch {
+      // not listening yet
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error("The companion server did not start.");
+}
+
+function fail(message: string): void {
+  dialog.showErrorBox("Offline Emergency Agent", message);
+  app.quit();
+}
+
+app.whenReady().then(async () => {
+  for (const key of Object.keys(settings) as (keyof typeof settings)[]) {
+    if (!allowed[key].includes(settings[key])) {
+      return fail(`AGENT_${key.toUpperCase()} must be one of: ${allowed[key].join(", ")} (got "${settings[key]}"). Check .env.`);
+    }
+  }
+  if (await portInUse(PORT)) {
+    return fail(`Port ${PORT} is already in use, probably by the weather companion started from a terminal. Stop it and open the app again.`);
+  }
+  // Start the companion server inside this process. The path is built at runtime on purpose, so the
+  // TypeScript check of the app doesn't also type-check the companion module.
+  process.env.PORT = String(PORT);
+  await import(new URL("../modules/weather-companion/src/server.ts", import.meta.url).href);
+  await waitForServer();
+
+  const win = new BrowserWindow({
+    width: 1320,
+    height: 880,
+    title: "Offline Emergency Agent",
+    webPreferences: { contextIsolation: true, sandbox: true },
+  });
+  // Source links and the companion's other pages open in the normal browser; the window stays on the companion.
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
   });
-  win.loadFile(new URL("index.html", import.meta.url).pathname);
+  win.webContents.on("will-navigate", (event, url) => {
+    if (!url.startsWith(`${ORIGIN}/companion`)) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+  const query = new URLSearchParams(settings).toString();
+  win.loadURL(`${ORIGIN}/companion?${query}`);
   if (process.env.AGENT_DEVTOOLS === "1") win.webContents.openDevTools({ mode: "detach" });
 });
 
-// Closing the window quits the app (also on macOS), so the launcher can clean up after it.
+// Closing the window quits the app, which also stops the companion server.
 app.on("window-all-closed", () => app.quit());

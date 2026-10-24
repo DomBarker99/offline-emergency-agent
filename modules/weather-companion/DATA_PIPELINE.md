@@ -91,12 +91,12 @@ The browser emits `assistant:mode` with `{mode, reason, context, contextFreshnes
 
 This supports switching an already loaded page. It does not yet cache the application for offline reload, persist weather context across reloads, or deliver messages to a model without the harness integration. Browser online status is a connectivity hint, not verification of upstream internet reachability.
 
-### Connected companion chat
-`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history, rejects foreign browser origins, and applies a model timeout. The response is `{answer, provider, model, contextFreshness, sources}`. The API key exists only in the server environment (`OPENROUTER_API_KEY`).
+### Companion chat (shared agent)
+`POST /api/chat` accepts `{text, mode: "connected" | "local", context: EventContext | null, timing?, history: [{role, content}]}`. It validates the packet with Zod, limits request size/history and rejects foreign browser origins. The response is `{answer, provider, model, contextFreshness}`: the answer only, with citation tags removed.
 
-Connected mode uses OpenRouter Gemma; local mode uses `LOCAL_BASE_URL` (default `http://127.0.0.1:8080/v1`) and `LOCAL_MODEL` (default `gemma4-26b-a4b`). There is no cloud fallback in local mode. Errors remain visible, and responses arriving after a mode change are discarded. Browser history is memory-only, capped at 12 turns per request. Connected requests send conversation history and a compact simulated weather summary to OpenRouter.
+`src/chat.ts` hands the question to the shared agent, `ask()` in the repo's `src/agent.ts`, so the companion answers exactly like the desktop app: meaning search over the 2,140-passage library (`data/library/`), action cards on danger words, the household profile, and the medical limit. The companion adds its conversation style (one manageable step at a time), the simulated weather context and the device timing as a "current situation" block, and the scenario's hazard as a search hint. Sources, danger rules and flags are logged in `logs/turns-<date>.jsonl`, not returned.
 
-This is a cards-based demo adapter, not the root agent's retrieval pipeline. It loads the repository's emergency cards; the full root agent additionally requires the missing built passage/vector library and embedding model. No tools or autonomous actions are enabled. Voice remains unconnected. Successful local replies confirm local readiness; switching mode alone does not.
+Model choice: `AGENT_PROVIDER` (`local` or `openrouter`) is used while the page is online. When the page is offline (really, or "Simulate offline"), the answer comes from the local model (`LOCAL_BASE_URL`, default `http://127.0.0.1:8080/v1`). There is no cloud fallback offline. The OpenRouter key exists only in the server environment (`OPENROUTER_API_KEY`). No tools or autonomous actions are enabled.
 
 ```mermaid
 flowchart TD
