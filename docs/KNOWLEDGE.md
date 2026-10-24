@@ -55,6 +55,8 @@ npm run bench -- --retrieval-only
 
 ## Reviewing cards
 
+Cards follow the medical limit (see ARCHITECTURE.md): no treatment or first-aid steps. C6 (heat illness) keeps only "call 9-1-1 or go to a hospital" and "call your healthcare provider"; its removed quotes are listed in `removedQuotes`.
+
 Each card in `data/cards/library-cards.json` lists its `quotes`: every sentence, with the passage ID and URL it came from. To review one:
 
 1. Read each quote on the original page.

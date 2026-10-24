@@ -23,7 +23,7 @@ The desktop app runs `ask()` inside Electron's main process. The window (`app/in
 | 1. Search text | Short follow-ups are searched together with the previous user question | No |
 | 2. Danger rules | Regular expressions (flood, gas, fire, carbon monoxide, earthquake, heat illness) pick action cards to force in | No |
 | 3. Search | The question is embedded (bge-small, on CPU) and compared with every passage; top 5 | No (a small embedding model, not a language model) |
-| 4. Prompt | System: rules + household profile. User: earlier turns as text, then `Cards: [C..] … [L1] heading (publisher, updated date): text … Question: …` | No |
+| 4. Prompt | System: rules + household profile. User: earlier turns as text, then `Cards: [C..] … [L1] heading (publisher, updated date): text …`, a one-line medical reminder, and `Question: …`. **Medical limit:** for medicines and devices the agent passes on handling guidance only (storage, temperature limits, how long they last, when to replace); for symptoms, injuries or treatment it refers to 911, a pharmacist or a doctor. No diagnoses, first aid, doses, or advice on whether to use a medicine. | No |
 | 5. Model call | OpenAI Agents SDK `Agent` + `Runner`, temperature 0.2, max 600 tokens. SDK tracing is off. | **Yes** |
 | 6. Answer check | Flags: no citation, citing something not shown, phone numbers or doses not in the sources. Flags are reported, never hidden, and never block the answer. | No |
 | 7. Log | `logs/turns-<date>.jsonl`: question, search text, dangers, sources, flags, answer (with citation tags), timings and the full user message | No |

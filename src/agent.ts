@@ -65,7 +65,7 @@ const DANGER_RULES: { id: string; scenario: string; pattern: RegExp }[] = [
 ];
 
 // ---- The system prompt ----------------------------------------------------------------------------
-export const PROMPT_VERSION = "2026-10-24.1"; // bump when RULES or the profile change; it's written to the log
+export const PROMPT_VERSION = "2026-10-24.3"; // bump when RULES or the profile change; it's written to the log
 const RULES = [
   "You are an offline emergency assistant running on the user's laptop with no internet.",
   "Answer ONLY from the cards and official passages provided with each question. Cite their IDs in square brackets after each step, e.g. [C2] or [L1].",
@@ -73,10 +73,14 @@ const RULES = [
   "Be brief: numbered steps, at most 6.",
   "If the cards do not contain the answer, say exactly 'That is not in your emergency pack.' and suggest which official source to check when possible.",
   "Never invent phone numbers, addresses, routes or medication doses.",
+  // The agent is not a clinician. It may only pass on official HANDLING guidance for medicines and devices.
+  "You are not a medical provider. Never say how to treat a person, what first aid to do, what dose to give, or whether to use, keep using, ration or stop a medicine or device, even if a passage says so (for example, never say 'use it until you get a new supply'). For medicines and medical devices, repeat only handling facts from the passages: how to store them, temperature limits, how long they last unrefrigerated, when to throw them out or replace them. For any symptom, injury or treatment question, say to call 911 in an emergency, or to ask a pharmacist or doctor.",
   "Safety first: if the user describes immediate danger (rising water, fire, gas, injury), give the protective action first; a plan card about leaving when officials order it never means staying in danger.",
   "Reply in the same language the user writes in.",
 ];
 const PROFILE_TEXT = profileText(); // data/profile.json, see profile.ts
+const MEDICAL_REMINDER =
+  "Reminder: for medicines and devices give handling facts only (storage, temperature, how long they last, when to replace); never whether to use or keep using them. For symptoms, injuries or treatment, refer to 911, a pharmacist or a doctor. No first aid, doses or treatment steps.";
 const SYSTEM_PROMPT = [...RULES, "", PROFILE_TEXT].join("\n");
 
 // ---- One question -----------------------------------------------------------------------------------
@@ -166,7 +170,8 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
       return `[L${i + 1}] ${title} (${p.publisher}${when}):\n${p.text}`;
     }),
   ];
-  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\nQuestion: ${question}`;
+  // The reminder sits right before the question because small models follow nearby instructions best.
+  const message = `Cards:\n${blocks.join("\n\n") || "(no matching cards)"}\n\n${MEDICAL_REMINDER}\n\nQuestion: ${question}`;
 
   // 5: the Agents SDK call. Earlier turns go in as plain text; only this question gets sources.
   const runner = new Runner({
@@ -186,8 +191,8 @@ export async function ask(question: string, history: Turn[], provider: ProviderN
     ...cards.map((c) => ({ id: c.id, title: c.title, publisher: c.source.name, url: c.source.url, pinned: true })),
     ...passages.map((p, i) => ({ id: `L${i + 1}`, ref: p.id, title: p.heading, publisher: p.publisher, url: p.url, pinned: false })),
   ];
-  // Numbers may come from the passages or the profile (e.g. the out-of-area contact's phone).
-  const flags = checkAnswer(answer, sources.map((s) => s.id), `${message}\n${PROFILE_TEXT}`); // 6
+  // Numbers may come from the passages, the profile (e.g. the contact's phone) or the rules (911).
+  const flags = checkAnswer(answer, sources.map((s) => s.id), `${message}\n${PROFILE_TEXT}\n${RULES.join("\n")}`); // 6
   const turn = {
     at: new Date().toISOString(),
     provider,

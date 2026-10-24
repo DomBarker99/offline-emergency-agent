@@ -233,12 +233,12 @@
   },
   {
     "id": "C6",
-    "title": "Heat illness: act now",
+    "title": "Heat illness: get medical help",
     "scenarios": [
       "extreme-heat"
     ],
     "danger": "immediate",
-    "body": "If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately. If possible, move the person suffering from heat stroke into a cool, shaded area. Remove any outer clothing. Place a cold, wet cloth or ice pack on the head, neck, armpits, and groin. If you have signs of heat cramps or heat exhaustion, go to a cooler location and cool down by removing excess clothing and taking sips of sports drinks or water. Call your healthcare provider if symptoms get worse or last more than an hour.",
+    "body": "If you suspect heat stroke, call 9-1-1 or take the person to a hospital immediately. Call your healthcare provider if symptoms get worse or last more than an hour.",
     "source": {
       "name": "FEMA (Ready.gov)",
       "url": "https://www.ready.gov/heat",
@@ -255,36 +255,19 @@
       },
       {
         "passageId": "ready-gov:heat:3",
-        "quote": "If possible, move the person suffering from heat stroke into a cool, shaded area.",
-        "url": "https://www.ready.gov/heat",
-        "publisher": "FEMA (Ready.gov)"
-      },
-      {
-        "passageId": "ready-gov:heat:3",
-        "quote": "Remove any outer clothing.",
-        "url": "https://www.ready.gov/heat",
-        "publisher": "FEMA (Ready.gov)"
-      },
-      {
-        "passageId": "ready-gov:heat:3",
-        "quote": "Place a cold, wet cloth or ice pack on the head, neck, armpits, and groin.",
-        "url": "https://www.ready.gov/heat",
-        "publisher": "FEMA (Ready.gov)"
-      },
-      {
-        "passageId": "ready-gov:heat:3",
-        "quote": "If you have signs of heat cramps or heat exhaustion, go to a cooler location and cool down by removing excess clothing and taking sips of sports drinks or water.",
-        "url": "https://www.ready.gov/heat",
-        "publisher": "FEMA (Ready.gov)"
-      },
-      {
-        "passageId": "ready-gov:heat:3",
         "quote": "Call your healthcare provider if symptoms get worse or last more than an hour.",
         "url": "https://www.ready.gov/heat",
         "publisher": "FEMA (Ready.gov)"
       }
     ],
     "droppedQuotes": 0,
-    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)"
+    "draftedBy": "gpt-6.1-sol (selection only; every sentence checked verbatim against its passage)",
+    "removedQuotes": [
+      "If possible, move the person suffering from heat stroke into a cool, shaded area.",
+      "Remove any outer clothing.",
+      "Place a cold, wet cloth or ice pack on the head, neck, armpits, and groin.",
+      "If you have signs of heat cramps or heat exhaustion, go to a cooler location and cool down by removing excess clothing and taking sips of sports drinks or water."
+    ],
+    "note": "2026-10-24: first-aid steps removed (no medical advice beyond handling and referral)."
   }
 ]
